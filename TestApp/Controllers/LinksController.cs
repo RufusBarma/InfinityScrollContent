@@ -18,11 +18,17 @@ public record Link
 [Route("[controller]")]
 public class LinksController: ControllerBase
 {
+    private string _connString;
+    
+    public LinksController(IConfiguration configuration)
+    {
+        _connString = configuration.GetConnectionString("DefaultConnection");
+    }
+    
     [HttpGet]
     public async Task<JsonResult> Get(int count=1, bool looped = false)
     {
-        const string connectionString = "mongodb://root:example@localhost:27017";
-        var client = new MongoClient(connectionString);
+        var client = new MongoClient(_connString);
         var database = client.GetDatabase("MyTestProject");
         var collection = database.GetCollection<BsonDocument>("links");
         var documents = await collection.Find(new BsonDocument()).ToListAsync();
