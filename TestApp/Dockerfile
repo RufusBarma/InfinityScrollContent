@@ -5,13 +5,14 @@ EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /src
-COPY ["TestApp/TestApp.csproj", "TestApp/"]
+COPY ["./", "TestApp/"]
 RUN dotnet restore "TestApp/TestApp.csproj"
 COPY . .
 WORKDIR "/src/TestApp"
 RUN dotnet build "TestApp.csproj" -c Release -o /app/build
 
 FROM build AS publish
+RUN apt update -yq && apt-get install -yq nodejs npm
 RUN dotnet publish "TestApp.csproj" -c Release -o /app/publish
 
 FROM base AS final
