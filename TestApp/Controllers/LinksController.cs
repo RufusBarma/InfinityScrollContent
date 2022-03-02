@@ -32,7 +32,7 @@ public class LinksController: ControllerBase
         var database = client.GetDatabase("MyTestProject");
         var collection = database.GetCollection<BsonDocument>("links");
         var documents = await collection.Find(new BsonDocument()).ToListAsync();
-        if (documents.Count == 1)
+        if (documents.Count == 0)
         {
             await collection.InsertOneAsync(new Link{Value = "https://thumbs.gfycat.com/SameLiveKoala-mobile.mp4"}.ToBsonDocument());
         }
