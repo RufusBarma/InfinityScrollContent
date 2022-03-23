@@ -9,8 +9,8 @@ var accessToken = GetVariable("access_token_reddit");
 var reddit = new RedditClient(appId, refreshToken, appSecret, accessToken);
 
 var subreddit = reddit.Subreddit("all", over18: true);
-List<Post> posts = subreddit.Search();
-
+List<Post> posts = subreddit.About().Posts.Top;
+Console.WriteLine("heh");
 string GetVariable(string variable)
 {
 	var envVariable = Environment.GetEnvironmentVariable(variable);
