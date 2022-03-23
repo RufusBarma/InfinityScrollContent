@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestApp", "TestApp\TestApp.csproj", "{6CA29583-20D9-4139-A720-83B79E932D57}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "СontentAggregator", "СontentAggregator\СontentAggregator.csproj", "{C95A5862-CF37-4E1E-818C-E7585973C24B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{6CA29583-20D9-4139-A720-83B79E932D57}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6CA29583-20D9-4139-A720-83B79E932D57}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6CA29583-20D9-4139-A720-83B79E932D57}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C95A5862-CF37-4E1E-818C-E7585973C24B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C95A5862-CF37-4E1E-818C-E7585973C24B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C95A5862-CF37-4E1E-818C-E7585973C24B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C95A5862-CF37-4E1E-818C-E7585973C24B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
