@@ -1,23 +1,21 @@
-﻿using Reddit;
-using Reddit.Controllers;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using СontentAggregator.Aggregators;
+using СontentAggregator.Aggregators.Reddit;
 
-var appId = GetVariable("app_id_reddit");
-var refreshToken = GetVariable("refresh_token_reddit");
-var appSecret = GetVariable("app_secret_reddit");
-var accessToken = GetVariable("access_token_reddit");
+var configurationRoot = new ConfigurationBuilder()
+	.AddEnvironmentVariables()
+	.AddJsonFile("appsettings.json")
+	.Build();
 
-var reddit = new RedditClient(appId, refreshToken, appSecret, accessToken);
+var serviceProvider = new ServiceCollection()
+	.AddTransient<IAggregator, RedditAggregator>()
+	.AddSingleton<AggregatorComposer>()
+	.AddSingleton<RedditCategoriesAggregator>()
+	.AddSingleton<IConfiguration>(configurationRoot)
+	.BuildServiceProvider();
 
-var subreddit = reddit.Subreddit("all", over18: true);
-List<Post> posts = subreddit.About().Posts.Top;
-Console.WriteLine("heh");
-string GetVariable(string variable)
-{
-	var envVariable = Environment.GetEnvironmentVariable(variable);
-	if (envVariable == null)
-	{
-		throw new Exception($"Can't get '{variable}' from environment!");
-	}
-
-	return envVariable;
-}
+var composer = serviceProvider.GetService<AggregatorComposer>();
+// composer.Start();
+var categories = serviceProvider.GetService<RedditCategoriesAggregator>().GetCategories();
+Console.WriteLine("Finish");
