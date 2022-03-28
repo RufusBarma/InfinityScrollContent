@@ -16,6 +16,6 @@ var serviceProvider = new ServiceCollection()
 	.BuildServiceProvider();
 
 var composer = serviceProvider.GetService<AggregatorComposer>();
-// composer.Start();
-var categories = serviceProvider.GetService<RedditCategoriesAggregator>().GetCategories();
+composer.Start();
+// var categories = serviceProvider.GetService<RedditCategoriesAggregator>().GetCategories();
 Console.WriteLine("Finish");
