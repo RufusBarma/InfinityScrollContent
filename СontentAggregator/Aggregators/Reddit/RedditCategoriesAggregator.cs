@@ -2,28 +2,16 @@
 using System.Text.Json;
 using HtmlAgilityPack;
 using Microsoft.Extensions.Configuration;
+using СontentAggregator.Models;
 
 namespace СontentAggregator.Aggregators.Reddit;
 
-public record Category
-{
-	public string Title { get; init; }
-	public List<Category> SubCategories { get; init; } = new();
-	public List<CategoryItem> Items { get; init; } = new();
-}
-
-public record CategoryItem
-{
-	public string Title { get; init; }
-	public string Description { get; init; }
-}
-
 public class RedditCategoriesAggregator
 {
-	private string _cachePath;
-	private string _categoriesPagePath;
-	private string _categoriesAddress;
 	private readonly List<string> _headers = Enumerable.Range(1, 6).Select(level => "h" + level).ToList();
+	private readonly string _cachePath;
+	private readonly string _categoriesAddress;
+	private readonly string _categoriesPagePath;
 
 	public RedditCategoriesAggregator(IConfiguration config)
 	{
@@ -86,7 +74,6 @@ public class RedditCategoriesAggregator
 		var categories = new List<Category>();
 		var previousNodes = new Stack<(HtmlNode Node, Category Category)>();
 		foreach (var node in nodes)
-		{
 			if (IsHeader(node))
 			{
 				var category = new Category {Title = node.InnerText};
@@ -97,12 +84,12 @@ public class RedditCategoriesAggregator
 				else
 					previousNodes.Peek().Category.SubCategories.Add(category);
 				previousNodes.Push((node, category));
-			} else if (node.Name == "table")
+			}
+			else if (node.Name == "table")
 			{
 				var previousCategory = previousNodes.Peek().Category;
 				previousCategory.Items.AddRange(GetCategoryItems(node));
 			}
-		}
 
 		return categories;
 	}
@@ -112,7 +99,7 @@ public class RedditCategoriesAggregator
 		return tableNode
 			.Descendants("tr")
 			.Skip(1)
-			.Where(tr=>tr.Elements("td").Count()>1)
+			.Where(tr => tr.Elements("td").Count() > 1)
 			.Select(tr => tr.Elements("td").Select(td => td.InnerText.Trim()).ToList())
 			.ToList();
 	}
