@@ -1,7 +1,7 @@
 ﻿using System.Net;
-using System.Text.Json;
 using HtmlAgilityPack;
 using Microsoft.Extensions.Configuration;
+using MongoDB.Driver;
 using СontentAggregator.Models;
 
 namespace СontentAggregator.Aggregators.Reddit;
@@ -12,22 +12,27 @@ public class RedditCategoriesAggregator
 	private readonly string _cachePath;
 	private readonly string _categoriesAddress;
 	private readonly string _categoriesPagePath;
+	private MongoClient _clientDb;
 
 	public RedditCategoriesAggregator(IConfiguration config)
 	{
 		_cachePath = config["Cache:CategoriesPath"];
 		_categoriesAddress = config["Reddit:CategoriesAddress"];
 		_categoriesPagePath = config["Cache:RootPath"] + "pageCache.txt";
+		_clientDb = new MongoClient(config.GetConnectionString("DefaultConnection"));
 	}
 
 	public List<Category> GetCategories()
 	{
-		if (File.Exists(_cachePath))
-			return JsonSerializer.Deserialize<List<Category>>(File.ReadAllText(_cachePath));
-		var categories = ParseCategories(_categoriesAddress);
-		var categoriesJson = JsonSerializer.Serialize(categories);
-		new FileInfo(_cachePath).Directory?.Create();
-		File.WriteAllText(_cachePath, categoriesJson);
+		var database = _clientDb.GetDatabase("Reddit");
+		var collection = database.GetCollection<Category>("Categories");
+		var documentsCount = collection.CountDocuments(doc => true);
+		var categories = collection.Aggregate().ToList();
+		if (documentsCount == 0)
+		{
+			categories = ParseCategories(_categoriesAddress);
+			collection.InsertMany(categories);
+		}
 		return categories;
 	}
 

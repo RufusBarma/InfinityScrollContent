@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
 using Reddit;
-using Reddit.Controllers;
 using СontentAggregator.Models;
 
 namespace СontentAggregator.Aggregators.Reddit;
@@ -10,6 +9,7 @@ public class RedditAggregator: IAggregator
 {
 	private readonly RedditClient _reddit;
 	private List<Category> _categories;
+	private MongoClient _clientDb;
 
 	public RedditAggregator(IConfiguration config, RedditCategoriesAggregator categoriesAggregator)
 	{
@@ -18,26 +18,17 @@ public class RedditAggregator: IAggregator
 		var appSecret = config["app_secret_reddit"];
 		var accessToken = config["access_token_reddit"];
 		_reddit = new RedditClient(appId, refreshToken, appSecret, accessToken);
-		var client = new MongoClient(config.GetConnectionString("DefaultConnection"));
-		var database = client.GetDatabase("Reddit");
-		var collection = database.GetCollection<Category>("Categories");
-		_categories = collection.Aggregate().ToList();
-		var documentsCount = collection.CountDocuments(doc => true);
-		if (documentsCount == 0)
-		{
-			_categories = categoriesAggregator.GetCategories();
-			collection.InsertMany(_categories);
-		}
+		_clientDb = new MongoClient(config.GetConnectionString("DefaultConnection"));
+		_categories = categoriesAggregator.GetCategories();
 	}
 
-	public async void Start()
+	public void Start()
 	{
 		var testCategory = _categories.First(category => category.Items.Any());
-		var subreddit = _reddit.Subreddit(testCategory.Items[1].Title, over18: true);
-		List<Post> posts = subreddit.Posts.GetTop(limit: 5);
-		foreach (var post in posts)
-		{
-		}
+		var name = testCategory.Items[1].Title.Substring(3);
+		var subreddit = _reddit.Subreddit(name, over18: true);
+		var posts = subreddit.Posts.GetTop(limit: 1);
+		Console.WriteLine(posts.FirstOrDefault()?.Author);
 	}
 
 	public void Stop()
