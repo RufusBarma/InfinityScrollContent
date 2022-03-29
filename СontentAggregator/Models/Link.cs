@@ -2,6 +2,7 @@ namespace СontentAggregator.Models;
 
 public enum LinkType
 {
+    None,
     Video,
     Img,
     Gif,
@@ -9,7 +10,8 @@ public enum LinkType
 }
 public record Link
 {
-    public string Value { get; init; }
-    public Category Category { get; init; }
+    public string Url { get; init; }
+    public string Domain { get; init; }
+    public string Category { get; init; }
     public LinkType Type { get; init; }
 }
