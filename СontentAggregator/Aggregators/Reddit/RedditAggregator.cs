@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using Reddit;
 using Reddit.Controllers;
+using Reddit.Exceptions;
 using СontentAggregator.Models;
 
 namespace СontentAggregator.Aggregators.Reddit;
@@ -37,7 +38,7 @@ public class RedditAggregator: IAggregator
 	public void Start()
 	{
 		var categoryItems = _categories.SelectMany(GetAllItems).ToList();
-		foreach (var category in categoryItems.Take(1).Select(categoryItem => categoryItem.Title))
+		foreach (var category in categoryItems.Skip(120).Take(20).Select(categoryItem => categoryItem.Title))
 		{
 			var position = _positions.Find(pos => pos.Title == category).FirstOrDefault();
 			if (position == null)
@@ -46,18 +47,27 @@ public class RedditAggregator: IAggregator
 				_positions.InsertOne(position);
 			}
 			var name = category.Substring(3);
-			var subreddit = _reddit.Subreddit(name, over18: true).About();
+			Subreddit subreddit;
+			try
+			{
+				subreddit = _reddit.Subreddit(name, over18: true).About();
+			}
+			catch (RedditNotFoundException ex)
+			{
+				_logger.LogError(ex, ex.Message);
+				continue;
+			}
 			if (subreddit.Created == default)
 			{
 				_logger.LogWarning($"{category} is banned or not exist");
-				continue;
+				break;
 			}
 			if (position.AfterEnd)
 			{
 				_logger.LogWarning($"{category} is end");
 				continue;
 			}
-			var posts = subreddit.Posts.GetTop(limit: 10, after: position.After);
+			var posts = subreddit.Posts.GetTop(limit: 100, after: position.After);
 			var newAfter = posts.Last().Fullname;
 			if (position.After == newAfter)
 			{
