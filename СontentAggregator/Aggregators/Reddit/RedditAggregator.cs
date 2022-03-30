@@ -46,7 +46,12 @@ public class RedditAggregator: IAggregator
 				_positions.InsertOne(position);
 			}
 			var name = category.Substring(3);
-			var subreddit = _reddit.Subreddit(name, over18: true);
+			var subreddit = _reddit.Subreddit(name, over18: true).About();
+			if (subreddit.Created == default)
+			{
+				_logger.LogWarning($"{category} is banned or not exist");
+				continue;
+			}
 			if (position.AfterEnd)
 			{
 				_logger.LogWarning($"{category} is end");
