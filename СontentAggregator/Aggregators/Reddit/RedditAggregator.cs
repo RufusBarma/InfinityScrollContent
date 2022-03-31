@@ -44,6 +44,7 @@ public class RedditAggregator: IAggregator
 	public void Stop()
 	{
 		_cancelTokenSource.Cancel();
+		_cancelTokenSource.Dispose();
 	}
 
 	private async Task RunAggregator(CancellationToken cancellationToken)
