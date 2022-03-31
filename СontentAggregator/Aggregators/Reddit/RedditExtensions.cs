@@ -1,4 +1,5 @@
 using LanguageExt;
+using LanguageExt.UnsafeValueAccess;
 using Microsoft.Extensions.Logging;
 using Reddit;
 using Reddit.Controllers;
@@ -30,4 +31,10 @@ public static class RedditExtensions
 			return Option<Subreddit>.None;
 		}
 	}
+
+	public static IEnumerable<TResult> SelectSome<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, Option<TResult>> selector) => 
+		source
+			.Select(selector)
+			.Where(item => item.IsSome)
+			.Select(item => item.ValueUnsafe());
 }
