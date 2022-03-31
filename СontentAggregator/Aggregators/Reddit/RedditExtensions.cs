@@ -9,13 +9,10 @@ namespace СontentAggregator.Aggregators.Reddit;
 
 public static class RedditExtensions
 {
-	public static IEnumerable<Link> GetLinks(this IEnumerable<Post> posts)
-	{
-		return posts
+	public static IEnumerable<Link> GetLinks(this IEnumerable<Post> posts) => posts
 			.Where(post => post is LinkPost)
 			.Cast<LinkPost>()
-			.Select(post => new Link {Category = post.Subreddit, Url = post.URL});
-	}
+			.Select(post => new Link {Category = post.Subreddit, SourceUrl = post.URL});
 
 	public static Option<Subreddit> GetSubreddit(this RedditClient client, string category, ILogger logger)
 	{
