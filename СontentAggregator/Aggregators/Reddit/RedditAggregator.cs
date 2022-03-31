@@ -51,8 +51,7 @@ public class RedditAggregator: IAggregator
 	{
 		var categoryItems = _categories.SelectMany(category => category.GetAllItems()).ToList();
 		foreach (var links in categoryItems.Take(1)
-			         .Select(categoryItem => categoryItem.Title)
-			         .SelectSome(category => _reddit.GetSubreddit(category, _logger))
+			         .SelectSome(category => _reddit.GetSubreddit(category.Title, _logger))
 			         .Select(async subreddit => await GetPosts(subreddit, await _positions.FindOrCreate(subreddit.Name)))
 			         .Select(async posts => (await posts).GetLinks()))
 		{
