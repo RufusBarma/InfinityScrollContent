@@ -9,7 +9,8 @@ public class AggregatorComposer
 
 	public void Start()
 	{
-		_aggregators.ForEach(aggregator => aggregator.Start());
+		var aggregatorTasks = _aggregators.Select(aggregator => aggregator.Start()).ToArray();
+		Task.WaitAll(aggregatorTasks);
 	}
 
 	public void Stop()

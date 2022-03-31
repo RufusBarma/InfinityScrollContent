@@ -2,6 +2,6 @@
 
 public interface IAggregator
 {
-	void Start();
+	Task Start();
 	void Stop();
 }
