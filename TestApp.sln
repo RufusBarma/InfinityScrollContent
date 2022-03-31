@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestApp", "TestApp\TestApp.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "СontentAggregator", "СontentAggregator\СontentAggregator.csproj", "{C95A5862-CF37-4E1E-818C-E7585973C24B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bot.Telegram", "Bot.Telegram\Bot.Telegram.csproj", "{F01FA6E4-3326-4C94-9D5E-027E817120E1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{C95A5862-CF37-4E1E-818C-E7585973C24B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C95A5862-CF37-4E1E-818C-E7585973C24B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C95A5862-CF37-4E1E-818C-E7585973C24B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F01FA6E4-3326-4C94-9D5E-027E817120E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F01FA6E4-3326-4C94-9D5E-027E817120E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F01FA6E4-3326-4C94-9D5E-027E817120E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F01FA6E4-3326-4C94-9D5E-027E817120E1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
