@@ -1,4 +1,5 @@
 ﻿using LanguageExt;
+using LanguageExt.UnsafeValueAccess;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
@@ -48,11 +49,13 @@ public class RedditAggregator: IAggregator
 
 	private async Task RunAggregator(CancellationToken cancellationToken)
 	{
-		var categoryItems = _categories.Select(category => category.Title).Skip(600).Take(10);
+		var categoryItems = _categories.Skip(900).Take(10);
 		foreach (var linksTask in categoryItems
-			         .SelectSome(category => _reddit.GetSubreddit(category, _logger))
-			         .Select(async subreddit => await GetPosts(subreddit, await _positions.FindOrCreate(subreddit.Name)))
-			         .Select(posts => posts.GetLinks()))
+			         .Select(category => (category, Subreddit: _reddit.GetSubreddit(category.Title, _logger)))
+			         .Where(tuple => tuple.Subreddit.IsSome)
+			         .Select(tuple => (tuple.category, Subreddit: tuple.Subreddit.ValueUnsafe()))
+			         .Select(async tuple => (tuple.category, (await GetPosts(tuple.Subreddit, await _positions.FindOrCreate(tuple.Subreddit.Name)))))
+			         .Select(posts => posts.Item2.GetLinks(posts.category.Group)))
 		{
 			var links = (await linksTask).ToList();
 			if (links.Any())
