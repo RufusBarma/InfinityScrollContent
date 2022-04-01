@@ -22,10 +22,10 @@ public class RedditCategoriesAggregator
 		_clientDb = new MongoClient(config.GetConnectionString("DefaultConnection"));
 	}
 
-	public List<Category> GetCategories()
+	public List<CategoryItem> GetCategories()
 	{
 		var database = _clientDb.GetDatabase("Reddit");
-		var collection = database.GetCollection<Category>("Categories");
+		var collection = database.GetCollection<CategoryItem>("Categories");
 		var documentsCount = collection.CountDocuments(doc => true);
 		var categories = collection.Aggregate().ToList();
 		if (documentsCount == 0)
@@ -45,7 +45,7 @@ public class RedditCategoriesAggregator
 		return leftDeep.CompareTo(rightDeep);
 	}
 
-	private List<Category> ParseCategories(string address)
+	private List<CategoryItem> ParseCategories(string address)
 	{
 		string page;
 		if (!File.Exists(_categoriesPagePath))
@@ -74,27 +74,15 @@ public class RedditCategoriesAggregator
 		return GetCategories(nodes);
 	}
 
-	private List<Category> GetCategories(List<HtmlNode> nodes)
+	private List<CategoryItem> GetCategories(List<HtmlNode> nodes)
 	{
-		var categories = new List<Category>();
-		var previousNodes = new Stack<(HtmlNode Node, Category Category)>();
+		var categories = new List<CategoryItem>();
+		var group = "other";
 		foreach (var node in nodes)
 			if (IsHeader(node))
-			{
-				var category = new Category {Title = node.InnerText};
-				while (previousNodes.Count != 0 && CompareHeader(node, previousNodes.Peek().Node) <= 0)
-					previousNodes.Pop();
-				if (node.Name == "h1")
-					categories.Add(category);
-				else
-					previousNodes.Peek().Category.SubCategories.Add(category);
-				previousNodes.Push((node, category));
-			}
+				group = node.InnerText;
 			else if (node.Name == "table")
-			{
-				var previousCategory = previousNodes.Peek().Category;
-				previousCategory.Items.AddRange(GetCategoryItems(node));
-			}
+				categories.AddRange(GetCategoryItems(node, group));
 
 		return categories;
 	}
@@ -109,12 +97,13 @@ public class RedditCategoriesAggregator
 			.ToList();
 	}
 
-	private IEnumerable<CategoryItem> GetCategoryItems(HtmlNode table) => GetCategoryItems(ParseTable(table));
+	private IEnumerable<CategoryItem> GetCategoryItems(HtmlNode table, string group) => GetCategoryItems(ParseTable(table), group);
 
-	private IEnumerable<CategoryItem> GetCategoryItems(List<List<string>> table) =>
+	private IEnumerable<CategoryItem> GetCategoryItems(List<List<string>> table, string group) =>
 		table.Select(row => new CategoryItem
 		{
 			Title = row.First(),
-			Description = row.Last()
+			Description = row.Last(),
+			Group = group
 		});
 }

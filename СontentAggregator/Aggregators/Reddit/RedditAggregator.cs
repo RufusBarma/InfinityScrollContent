@@ -11,7 +11,7 @@ namespace СontentAggregator.Aggregators.Reddit;
 public class RedditAggregator: IAggregator
 {
 	private readonly RedditClient _reddit;
-	private List<Category> _categories;
+	private List<CategoryItem> _categories;
 	private IMongoCollection<RedditLink> _linkCollection;
 	private IMongoCollection<CategoryPosition> _positions;
 	private ILogger _logger;
@@ -48,9 +48,9 @@ public class RedditAggregator: IAggregator
 
 	private async Task RunAggregator(CancellationToken cancellationToken)
 	{
-		var categoryItems = _categories.SelectMany(category => category.GetAllItems()).Skip(500).Take(10);
+		var categoryItems = _categories.Select(category => category.Title).Skip(600).Take(10);
 		foreach (var linksTask in categoryItems
-			         .SelectSome(category => _reddit.GetSubreddit(category.Title, _logger))
+			         .SelectSome(category => _reddit.GetSubreddit(category, _logger))
 			         .Select(async subreddit => await GetPosts(subreddit, await _positions.FindOrCreate(subreddit.Name)))
 			         .Select(posts => posts.GetLinks()))
 		{
