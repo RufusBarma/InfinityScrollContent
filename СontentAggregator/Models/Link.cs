@@ -8,11 +8,16 @@ public enum LinkType
     Gif,
     Album
 }
-public record Link
+public abstract record Link
 {
     public string SourceUrl { get; init; }
     public string[] Urls { get; init; }
-    public string Domain { get; init; }
     public string Category { get; init; }
     public LinkType Type { get; init; }
+}
+
+public record RedditLink: Link
+{
+    public string FullName { get; init; }
+    public string Subreddit { get; init; }
 }

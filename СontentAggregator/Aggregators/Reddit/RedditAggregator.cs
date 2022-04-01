@@ -1,5 +1,4 @@
 ﻿using LanguageExt;
-using LanguageExt.UnsafeValueAccess;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
@@ -13,7 +12,7 @@ public class RedditAggregator: IAggregator
 {
 	private readonly RedditClient _reddit;
 	private List<Category> _categories;
-	private IMongoCollection<Link> _linkCollection;
+	private IMongoCollection<RedditLink> _linkCollection;
 	private IMongoCollection<CategoryPosition> _positions;
 	private ILogger _logger;
 	private Task _aggregatorTask;
@@ -29,7 +28,7 @@ public class RedditAggregator: IAggregator
 		var accessToken = config["access_token_reddit"];
 		_reddit = new RedditClient(appId, refreshToken, appSecret, accessToken);
 		var redditDb = new MongoClient(config.GetConnectionString("DefaultConnection")).GetDatabase("Reddit");
-		_linkCollection = redditDb.GetCollection<Link>("Links");
+		_linkCollection = redditDb.GetCollection<RedditLink>("Links");
 		_positions = redditDb.GetCollection<CategoryPosition>("CategoryPositions");
 		_categories = categoriesAggregator.GetCategories();
 	}
@@ -49,20 +48,20 @@ public class RedditAggregator: IAggregator
 
 	private async Task RunAggregator(CancellationToken cancellationToken)
 	{
-		var categoryItems = _categories.SelectMany(category => category.GetAllItems()).ToList();
-		foreach (var links in categoryItems.Take(1)
+		var categoryItems = _categories.SelectMany(category => category.GetAllItems()).Skip(500).Take(10);
+		foreach (var linksTask in categoryItems
 			         .SelectSome(category => _reddit.GetSubreddit(category.Title, _logger))
 			         .Select(async subreddit => await GetPosts(subreddit, await _positions.FindOrCreate(subreddit.Name)))
-			         .Select(async posts => (await posts).GetLinks()))
+			         .Select(posts => posts.GetLinks()))
 		{
+			var links = (await linksTask).ToList();
+			if (links.Any())
+				await _linkCollection.InsertManyAsync(links);
 			if (cancellationToken.IsCancellationRequested)
 			{
 				_logger.LogInformation("Cancel reddit aggregator");
 				return;
 			}
-
-			var link = await links;
-			await _linkCollection.InsertManyAsync(link);
 		}
 		_logger.LogInformation("Finish RedditParser");
 	}

@@ -9,22 +9,22 @@ namespace СontentAggregator.Aggregators.Reddit;
 
 public static class RedditExtensions
 {
-	public static IEnumerable<Link> GetLinks(this IEnumerable<Post> posts) => posts
+	public static IEnumerable<RedditLink> GetLinks(this IEnumerable<Post> posts) => posts
 			.Where(post => post is LinkPost)
 			.Cast<LinkPost>()
-			.Select(post => new Link {Category = post.Subreddit, SourceUrl = post.URL});
+			.Select(post => new RedditLink {Subreddit = post.Subreddit, SourceUrl = post.URL, FullName = post.Fullname});
 
-	public static Option<Subreddit> GetSubreddit(this RedditClient client, string category, ILogger logger)
+	public static Option<Subreddit> GetSubreddit(this RedditClient client, string name, ILogger logger)
 	{
 		try
 		{
-			var name = category.Substring(3);
-			return client.Subreddit(name, over18: true).About();
+			var clearName = name.Substring(3);
+			return client.Subreddit(clearName, over18: true).About();
 		}
 		catch (Exception ex)
 		{
-			ex.Data.Add("Subreddit", category);
-			logger.LogWarning(ex, "Exception on get {Subbreddit} subreddit", category);
+			ex.Data.Add("Subreddit", name);
+			logger.LogWarning(ex, "Exception on get {Subreddit} subreddit", name);
 			return Option<Subreddit>.None;
 		}
 	}
