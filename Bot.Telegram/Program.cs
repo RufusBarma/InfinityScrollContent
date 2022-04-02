@@ -6,6 +6,7 @@ using Telegram.Bot.Exceptions;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.ReplyMarkups;
 
 var configurationRoot = new ConfigurationBuilder()
     .AddEnvironmentVariables()
@@ -42,6 +43,31 @@ cts.Cancel();
 
 async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 {
+    if (update.Type == UpdateType.CallbackQuery)
+    {
+        var chatIdLocal = update.CallbackQuery.Message.Chat.Id;
+        var messageId = update.CallbackQuery.Message.MessageId;
+        
+        var inlineKeyboard = new InlineKeyboardMarkup(new []
+        {
+            // first row
+            new []
+            {
+                InlineKeyboardButton.WithCallbackData(text: "1.1", callbackData: "11"),
+                InlineKeyboardButton.WithCallbackData(text: "1.2", callbackData: "12"),
+            },
+        });
+        try
+        {
+            var message = await botClient.EditMessageReplyMarkupAsync(chatIdLocal, messageId, inlineKeyboard);
+            await botClient.EditMessageTextAsync(message.Chat.Id, message.MessageId, "Edited", replyMarkup: inlineKeyboard);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+        return;
+    }
     // Only process Message updates: https://core.telegram.org/bots/api#message
     if (update.Type != UpdateType.Message)
         return;
@@ -54,10 +80,28 @@ async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, Cancel
 
     Console.WriteLine($"Received a '{messageText}' message in chat {chatId}.");
 
+    
+    InlineKeyboardMarkup inlineKeyboardOrg = new(new []
+    {
+        // first row
+        new []
+        {
+            InlineKeyboardButton.WithCallbackData(text: "1.1", callbackData: "11"),
+            InlineKeyboardButton.WithCallbackData(text: "1.2", callbackData: "12"),
+        },
+        // second row
+        new []
+        {
+            InlineKeyboardButton.WithCallbackData(text: "2.1", callbackData: "21"),
+            InlineKeyboardButton.WithCallbackData(text: "2.2", callbackData: "22"),
+        },
+    });
+    
     // Echo received message text
     Message sentMessage = await botClient.SendTextMessageAsync(
         chatId: chatId,
         text: "You said:\n" + messageText,
+        replyMarkup: inlineKeyboardOrg,
         cancellationToken: cancellationToken);
 }
 
