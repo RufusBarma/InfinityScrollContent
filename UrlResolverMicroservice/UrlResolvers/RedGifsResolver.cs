@@ -14,15 +14,11 @@ public class RedGifsResolver : IUrlResolver
 		var id = url.Remove(0, url.LastIndexOf('/') + 1).ToLower();
 		var client = new RestClient($"https://api.redgifs.com/v2/gifs/{id}");
 		var response = await client.ExecuteGetTaskAsync(_request);
-		if (response.StatusCode == HttpStatusCode.NotFound)
-			return new[] { "NotFound" };
-		if (response.StatusCode == HttpStatusCode.Gone)
-			return new[] { "Deleted" };
+		if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Gone)
+			return Array.Empty<string>();
 		var data = JObject.Parse(response.Content);
 		var urls = data["gif"]["urls"];
 		var resultUrl = (urls["hd"] ?? urls["sd"]).Value<string>();
-		if (string.IsNullOrEmpty(resultUrl))
-			return new[] { "deleteme" };
 		return new[] { resultUrl };
 	}
 

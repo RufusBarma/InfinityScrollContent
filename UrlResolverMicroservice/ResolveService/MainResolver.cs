@@ -4,7 +4,7 @@ using MoreLinq;
 using UrlResolverMicroservice.Models;
 using UrlResolverMicroservice.UrlResolvers;
 
-namespace UrlResolverMicroservice.ResolveTask;
+namespace UrlResolverMicroservice.ResolveService;
 
 public class MainResolver : IMainResolver
 {
@@ -47,10 +47,12 @@ public class MainResolver : IMainResolver
 			var update = Builders<Link>.Update
 				.Set(updLink => updLink.Urls, link.Urls)
 				.Set(updLink => updLink.Type, link.Type)
-				.Set(updLink => updLink.IsGallery, link.IsGallery)
-				.Set(updLink => updLink.DeleteMe, link.DeleteMe);
+				.Set(updLink => updLink.IsGallery, link.IsGallery);
+			if (link.DeleteMe)
+				update.Set(updLink => updLink.DeleteMe, link.DeleteMe);
 			await _linkCollection.UpdateOneAsync(updateFilter, update);
 		}
+		_logger.LogInformation("Resolve completed");
 	}
 
 	private async Task<IEnumerable<string>> GetUrlsAsync(string url)
@@ -70,7 +72,9 @@ public class MainResolver : IMainResolver
 
 	private LinkType GetLinkType(string url)
 	{
-		_linkTypes.TryGetValue(url, out var defaultType);
+		if (!Path.HasExtension(url))
+			return LinkType.None;
+		_linkTypes.TryGetValue(Path.GetExtension(url), out var defaultType);
 		return defaultType;
 	}
 }

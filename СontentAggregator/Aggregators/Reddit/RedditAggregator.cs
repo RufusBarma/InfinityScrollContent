@@ -80,9 +80,12 @@ public class RedditAggregator: IAggregator
 		}
 		else
 		{
+			var newBefore = posts.First().Fullname;
 			var newAfter = posts.Last().Fullname;
 			position.After = newAfter;
-			await _positions.ReplaceOneAsync(pos => pos.Title == position.Title, position, new ReplaceOptions {IsUpsert = true});
+			var filter = Builders<CategoryPosition>.Filter.Eq(pos => pos.Title, position.Title);
+			var update = Builders<CategoryPosition>.Update.Set(pos => pos.After, newAfter).SetOnInsert(pos => pos.Before, newBefore);
+			await _positions.UpdateOneAsync(filter, update, new UpdateOptions {IsUpsert = true});
 		}
 
 		return posts;

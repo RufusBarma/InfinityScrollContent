@@ -1,7 +1,8 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using UrlResolverMicroservice.ResolveTask;
+using MongoDB.Driver;
+using UrlResolverMicroservice.ResolveService;
 using UrlResolverMicroservice.UrlResolvers;
 
 var configurationRoot = new ConfigurationBuilder()
@@ -14,13 +15,15 @@ var serviceProvider = new ServiceCollection()
 	.AddTransient<IUrlResolver, RedGifsResolver>()
 	.AddTransient<IUrlResolver, GfycatResolver>()
 	.AddSingleton<IConfiguration>(configurationRoot)
+	.AddSingleton<IMongoClient, MongoClient>(sp => new MongoClient(configurationRoot.GetConnectionString("DefaultConnection")))
 	.AddLogging(configure => configure.AddConsole())
 	.BuildServiceProvider();
 
-var composer = serviceProvider.GetService<MainResolver>();
+var resolverService = serviceProvider.GetService<IMainResolver>();
 var cancellationTokenSource = new CancellationTokenSource();
-var mainTask = composer.Start(cancellationTokenSource.Token);
-Console.ReadLine();
-cancellationTokenSource.Cancel();
-await mainTask.WaitAsync(cancellationTokenSource.Token);
+var mainTask = resolverService.Start(cancellationTokenSource.Token);
+await mainTask;
+// Console.ReadLine();
+// cancellationTokenSource.Cancel();
+// await mainTask.WaitAsync(cancellationTokenSource.Token);
 serviceProvider.Dispose();

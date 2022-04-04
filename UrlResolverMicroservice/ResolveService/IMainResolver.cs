@@ -1,4 +1,4 @@
-namespace UrlResolverMicroservice.ResolveTask;
+namespace UrlResolverMicroservice.ResolveService;
 
 public interface IMainResolver
 {
