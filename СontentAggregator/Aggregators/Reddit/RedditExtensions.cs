@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Reddit;
 using Reddit.Controllers;
 using СontentAggregator.Models;
+using СontentAggregator.UrlResolver;
 
 namespace СontentAggregator.Aggregators.Reddit;
 
@@ -19,9 +20,32 @@ public static class RedditExtensions
 				UpVotes = post.UpVotes,
 				UpvoteRatio = post.UpvoteRatio,
 				Category = group,
-				Urls = Path.HasExtension(post.URL)? new []{post.URL}: Array.Empty<string>(),
+				Urls = GetUrlsAsync(post.URL).Result.ToArray(),
 				FullName = post.Fullname
 			});
+
+	private static async Task<IEnumerable<string>> GetUrlsAsync(string url)
+	{
+		if (Path.HasExtension(url))
+			return new []{url};
+		if (url.Contains("gfycat.com"))
+		{
+			var gfycat = new GfycatResolver();
+			var result = await gfycat.ResolveAsync(url);
+			if (!result.Any())
+			{
+				var redgifs = new RedGifsResolver();
+				return await redgifs.ResolveAsync(url);
+			}
+		}
+		if (url.Contains("redgifs.com"))
+		{
+			var resolver = new RedGifsResolver();
+			return await resolver.ResolveAsync(url);
+		}
+
+		return Array.Empty<string>();
+	}
 
 	public static Option<Subreddit> GetSubreddit(this RedditClient client, string name, ILogger logger)
 	{

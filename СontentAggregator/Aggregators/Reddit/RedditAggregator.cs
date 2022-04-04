@@ -50,7 +50,7 @@ public class RedditAggregator: IAggregator
 
 	private async Task RunAggregator(CancellationToken cancellationToken)
 	{
-		var categoryItems = _categories.Shuffle().Take(150);
+		var categoryItems = _categories.Shuffle().Take(5);
 		foreach (var linksTask in categoryItems
 			         .Select(category => (category, Subreddit: _reddit.GetSubreddit(category.Title, _logger)))
 			         .Where(tuple => tuple.Subreddit.IsSome)
