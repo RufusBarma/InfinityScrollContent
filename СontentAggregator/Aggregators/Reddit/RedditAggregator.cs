@@ -3,6 +3,7 @@ using LanguageExt.UnsafeValueAccess;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
+using MoreLinq;
 using Reddit;
 using Reddit.Controllers;
 using СontentAggregator.Models;
@@ -49,7 +50,7 @@ public class RedditAggregator: IAggregator
 
 	private async Task RunAggregator(CancellationToken cancellationToken)
 	{
-		var categoryItems = _categories.Skip(900).Take(10);
+		var categoryItems = _categories.Shuffle().Take(150);
 		foreach (var linksTask in categoryItems
 			         .Select(category => (category, Subreddit: _reddit.GetSubreddit(category.Title, _logger)))
 			         .Where(tuple => tuple.Subreddit.IsSome)

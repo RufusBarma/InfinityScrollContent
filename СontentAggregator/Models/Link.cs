@@ -20,4 +20,6 @@ public record RedditLink: Link
 {
     public string FullName { get; init; }
     public string Subreddit { get; init; }
+    public int UpVotes { get; init; }
+    public double UpvoteRatio { get; init; }
 }
