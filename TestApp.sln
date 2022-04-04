@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "СontentAggregator", "Сont
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bot.Telegram", "Bot.Telegram\Bot.Telegram.csproj", "{F01FA6E4-3326-4C94-9D5E-027E817120E1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UrlResolverMicroservice", "UrlResolverMicroservice\UrlResolverMicroservice.csproj", "{B25425CC-6020-4537-8A4F-1A907EBE7DA1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{F01FA6E4-3326-4C94-9D5E-027E817120E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F01FA6E4-3326-4C94-9D5E-027E817120E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F01FA6E4-3326-4C94-9D5E-027E817120E1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B25425CC-6020-4537-8A4F-1A907EBE7DA1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B25425CC-6020-4537-8A4F-1A907EBE7DA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B25425CC-6020-4537-8A4F-1A907EBE7DA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B25425CC-6020-4537-8A4F-1A907EBE7DA1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -2,9 +2,9 @@ using System.Net;
 using Newtonsoft.Json.Linq;
 using RestSharp;
 
-namespace СontentAggregator.UrlResolver;
+namespace UrlResolverMicroservice.UrlResolvers;
 
-public class GfycatResolver: IUrlResolver
+public class GfycatResolver : IUrlResolver
 {
 	private readonly IRestRequest _request = new RestRequest(Method.GET).AddHeader("accept", "application/json");
 
@@ -22,6 +22,8 @@ public class GfycatResolver: IUrlResolver
 		var resultUrl = data["gfyItem"]["mp4Url"].Value<string>();
 		if (string.IsNullOrEmpty(resultUrl))
 			return Array.Empty<string>();
-		return new []{resultUrl};
+		return new[] { resultUrl };
 	}
+
+	public bool CanResolve(string url) => url.Contains("gfycat.com");
 }

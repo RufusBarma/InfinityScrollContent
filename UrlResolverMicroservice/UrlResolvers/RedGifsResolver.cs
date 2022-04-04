@@ -1,11 +1,10 @@
 using System.Net;
-using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json.Linq;
 using RestSharp;
 
-namespace СontentAggregator.UrlResolver;
+namespace UrlResolverMicroservice.UrlResolvers;
 
-public class RedGifsResolver: IUrlResolver
+public class RedGifsResolver : IUrlResolver
 {
 	private readonly IRestRequest _request = new RestRequest(Method.GET).AddHeader("accept", "application/json");
 
@@ -16,14 +15,16 @@ public class RedGifsResolver: IUrlResolver
 		var client = new RestClient($"https://api.redgifs.com/v2/gifs/{id}");
 		var response = await client.ExecuteGetTaskAsync(_request);
 		if (response.StatusCode == HttpStatusCode.NotFound)
-			return new[] {"NotFound"};
+			return new[] { "NotFound" };
 		if (response.StatusCode == HttpStatusCode.Gone)
-			return new[] {"Deleted"};
+			return new[] { "Deleted" };
 		var data = JObject.Parse(response.Content);
 		var urls = data["gif"]["urls"];
 		var resultUrl = (urls["hd"] ?? urls["sd"]).Value<string>();
 		if (string.IsNullOrEmpty(resultUrl))
-			return new[] {"deleteme"};
-		return new []{resultUrl};
+			return new[] { "deleteme" };
+		return new[] { resultUrl };
 	}
+
+	public bool CanResolve(string url) => url.Contains("redgifs.com") || url.Contains("gfycat.com");
 }
