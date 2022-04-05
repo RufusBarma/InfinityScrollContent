@@ -28,8 +28,8 @@ AppDomain.CurrentDomain.ProcessExit += async (_, _) =>
 {
 	cancellationTokenSource.Cancel();
 	await mainTask.WaitAsync(cancellationTokenSource.Token);
-	serviceProvider.Dispose();
 	logger.LogInformation("Received SIGTERM");
+	serviceProvider.Dispose();
 };
 
 while (true)
