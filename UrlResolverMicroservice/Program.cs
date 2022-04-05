@@ -22,21 +22,25 @@ var serviceProvider = new ServiceCollection()
 var resolverService = serviceProvider.GetService<IMainResolver>();
 var logger = serviceProvider.GetService<ILogger<Program>>();
 var cancellationTokenSource = new CancellationTokenSource();
-var mainTask = Task.CompletedTask;
+var currentTask = Task.CompletedTask;
 
 AppDomain.CurrentDomain.ProcessExit += async (_, _) =>
 {
-	cancellationTokenSource.Cancel();
-	await mainTask.WaitAsync(cancellationTokenSource.Token);
 	logger.LogInformation("Received SIGTERM");
-	serviceProvider.Dispose();
+	cancellationTokenSource.Cancel();
+	await currentTask.WaitAsync(CancellationToken.None);
+	logger.LogInformation("Safety shutdown");
+	await serviceProvider.DisposeAsync();
 };
 
-while (true)
+while (!cancellationTokenSource.IsCancellationRequested)
 {
 	logger.LogInformation("Start resolving");
-	mainTask = resolverService.Start(cancellationTokenSource.Token);
-	await mainTask;
+	currentTask = resolverService.Start(cancellationTokenSource.Token);
+	await currentTask;
+	if (cancellationTokenSource.IsCancellationRequested)
+		break;
 	logger.LogInformation("Complete resolving. Start waiting");
-	await Task.Delay(new TimeSpan(0, 30, 0), cancellationTokenSource.Token);
+	currentTask = Task.Delay(new TimeSpan(0, 30, 0), cancellationTokenSource.Token);
+	await currentTask;
 }
