@@ -35,7 +35,7 @@ public class ImgurResolver: IUrlResolver
 
 	public async Task<Either<string, string[]>> ResolveAsync(string url)
 	{
-		var urlParts = url.Split('/').SkipUntil(part => part == "imgur.com").ToList();
+		var urlParts = url.Split('/').SkipUntil(part => part.Contains("imgur.com")).ToList();
 		var endpointFuncs = urlParts.Count > 1 ? _endpoints[urlParts[0]] : _endpoints[""];
 		var client = new RestClient(endpointFuncs.getEndpoint(urlParts.Last()))
 		{
