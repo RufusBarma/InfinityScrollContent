@@ -12,6 +12,7 @@ var configurationRoot = new ConfigurationBuilder()
 
 var serviceProvider = new ServiceCollection()
 	.AddSingleton<IMainResolver, MainResolver>()
+	.AddSingleton<IUrlResolver, RedditGalleryResolver>()
 	.AddSingleton<IUrlResolver, RedGifsResolver>()
 	.AddSingleton<RedGifsResolver>()
 	.AddSingleton<IUrlResolver, GfycatResolver>()
