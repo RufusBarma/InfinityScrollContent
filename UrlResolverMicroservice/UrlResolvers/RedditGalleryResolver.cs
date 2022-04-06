@@ -14,15 +14,16 @@ public class RedditGalleryResolver: IUrlResolver
 		var response = await client.ExecuteGetTaskAsync(new RestRequest());
 		if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Gone)
 			return response.StatusDescription;
-		throw new NotImplementedException();
 		var data = JArray.Parse(response.Content);
 		var mediaParent = data[0]["data"]["children"][0]["data"]["media_metadata"];
 		var urls = new List<string>();
-		foreach (var media in mediaParent.Children())
+		foreach (var media in mediaParent.Children<JProperty>())
 		{
-			var id = media.Children()["id"];
-			urls.Add($"https://i.redd.it/{media.Value<string>("id")}.{media.Value<string>("m").Split("/").Last()}");
+			var id = media.Value["id"].Value<string>();
+			var type = media.Value["m"].Value<string>().Split("/").Last();
+			urls.Add($"https://i.redd.it/{id}.{type}");
 		}
+		urls.Reverse();
 		return urls.ToArray();
 	}
 
