@@ -26,6 +26,7 @@ public class ImgurResolver: IUrlResolver
 
 	public ImgurResolver(IConfiguration configuration)
 	{
+		//TODO implement api limits on application side
 		var clientId = configuration.GetSection("Imgur")["ClientId"];
 		_request = new RestRequest(Method.GET);
 		_request.AddHeader("Authorization", $"Client-ID {clientId}");
