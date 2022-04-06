@@ -1,3 +1,4 @@
+using LanguageExt;
 using Microsoft.Extensions.Configuration;
 using MoreLinq.Extensions;
 using RestSharp;
@@ -23,7 +24,7 @@ public class ImgurResolver: IUrlResolver
 		_request.AlwaysMultipartFormData = true;
 	}
 
-	public async Task<IEnumerable<string>> ResolveAsync(string url)
+	public async Task<Either<string, string[]>> ResolveAsync(string url)
 	{
 		var urlParts = url.Split('/').SkipUntil(part => part != "imgur.com");
 		var client = new RestClient("https://api.imgur.com/3/album/{{albumHash}}/images")

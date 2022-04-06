@@ -1,7 +1,9 @@
+using LanguageExt;
+
 namespace UrlResolverMicroservice.UrlResolvers;
 
 public interface IUrlResolver
 {
-	Task<IEnumerable<string>> ResolveAsync(string url);
+	Task<Either<string, string[]>> ResolveAsync(string url);
 	bool CanResolve(string url);
 }

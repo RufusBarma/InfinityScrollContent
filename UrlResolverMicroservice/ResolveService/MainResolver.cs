@@ -1,3 +1,4 @@
+using LanguageExt;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using MoreLinq;
@@ -33,41 +34,31 @@ public class MainResolver : IMainResolver
 		{
 			if (cancellationToken.IsCancellationRequested)
 				break;
-			var urls = (await GetUrlsAsync(link.SourceUrl)).ToArray();
-			if (urls.Any())
-			{
-				link.Urls = urls.ToArray();
-				link.Type = link.Type = GetLinkType(link.Urls.First());
-				link.IsGallery = urls.Length > 1;
-			}
-			else
-				link.DeleteMe = true;
+
+			var urlsEither = await GetUrlsAsync(link.SourceUrl);
+			var update = urlsEither.Match(urls => Builders<Link>.Update
+					.Set(updLink => updLink.Urls, urls)
+					.Set(updLink => updLink.Type, GetLinkType(urls.First()))
+					.Set(updLink => updLink.IsGallery, urls.Length > 1),
+				error => Builders<Link>.Update.Set(updLink => updLink.ErrorMessage, error));
 
 			var updateFilter = Builders<Link>.Filter.Eq("_id", link._id);
-			var update = Builders<Link>.Update
-				.Set(updLink => updLink.Urls, link.Urls)
-				.Set(updLink => updLink.Type, link.Type)
-				.Set(updLink => updLink.IsGallery, link.IsGallery);
-			if (link.DeleteMe)
-				update.Set(updLink => updLink.DeleteMe, link.DeleteMe);
-			await _linkCollection.UpdateOneAsync(updateFilter, update);
+			await _linkCollection.UpdateOneAsync(updateFilter, update, new UpdateOptions(){IsUpsert = true});
 		}
 		_logger.LogInformation("Resolve completed");
 	}
 
-	private async Task<IEnumerable<string>> GetUrlsAsync(string url)
+	private async Task<Either<string, string[]>> GetUrlsAsync(string url)
 	{
 		if (Path.HasExtension(url))
 			return new[] { url };
-		foreach (var resolver in _urlResolvers.Where(resolver => resolver.CanResolve(url)))
-		{
-			var urls = (await resolver.ResolveAsync(url)).ToArray();
-			if (urls.Any())
-				return urls;
-		}
-
-		_logger.LogWarning("Can't resolve {Url}", url);
-		return Array.Empty<string>();
+		return await Prelude.Optional(_urlResolvers.FirstOrDefault(resolver => resolver.CanResolve(url)))
+			.MatchAsync(
+				async resolver => await resolver.ResolveAsync(url), 
+				() => {
+					_logger.LogWarning("Resolver doesn't exist for {Url}", url);
+					return "Resolver doesn't exist";
+				});
 	}
 
 	private LinkType GetLinkType(string url)
