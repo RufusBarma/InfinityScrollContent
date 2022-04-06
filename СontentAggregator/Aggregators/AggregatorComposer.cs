@@ -7,14 +7,9 @@ public class AggregatorComposer
 	public AggregatorComposer(IEnumerable<IAggregator> aggregators) =>
 		_aggregators = aggregators.ToList();
 
-	public void Start()
+	public async Task Start(CancellationToken cancellationToken)
 	{
-		var aggregatorTasks = _aggregators.Select(aggregator => aggregator.Start()).ToArray();
-		Task.WaitAll(aggregatorTasks);
-	}
-
-	public void Stop()
-	{
-		_aggregators.ForEach(aggregator => aggregator.Stop());
+		var aggregatorTasks = _aggregators.Select(aggregator => aggregator.Start(cancellationToken)).ToArray();
+		await Task.WhenAll(aggregatorTasks);
 	}
 }

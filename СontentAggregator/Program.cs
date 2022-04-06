@@ -17,6 +17,24 @@ var serviceProvider = new ServiceCollection()
 	.AddLogging(configure => configure.AddConsole())
 	.BuildServiceProvider();
 
-var composer = serviceProvider.GetService<AggregatorComposer>();
-composer.Start();
-serviceProvider.Dispose();
+var composer = serviceProvider.GetRequiredService<AggregatorComposer>();
+var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+
+var cancellationTokenSource = new CancellationTokenSource();
+var currentTask = Task.CompletedTask;
+
+AppDomain.CurrentDomain.ProcessExit += async (_, _) =>
+{
+	logger.LogInformation("Received SIGTERM");
+	cancellationTokenSource.Cancel();
+	await currentTask.WaitAsync(CancellationToken.None);
+	logger.LogInformation("Safety shutdown");
+	await serviceProvider.DisposeAsync();
+};
+
+while (!cancellationTokenSource.IsCancellationRequested)
+{
+	logger.LogInformation("Start aggregation loop");
+	currentTask = composer.Start(cancellationTokenSource.Token);
+	await currentTask;
+}

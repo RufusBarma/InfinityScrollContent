@@ -2,6 +2,5 @@
 
 public interface IAggregator
 {
-	Task Start();
-	void Stop();
+	Task Start(CancellationToken cancellationToken);
 }

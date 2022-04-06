@@ -18,8 +18,6 @@ public class RedditAggregator: IAggregator
 	private IMongoCollection<CategoryPosition> _positions;
 	private ILogger _logger;
 	private Task _aggregatorTask;
-	private CancellationTokenSource _cancelTokenSource = new ();
-	private CancellationToken _cancellation;
 
 	public RedditAggregator(IConfiguration config, RedditCategoriesAggregator categoriesAggregator, ILogger<RedditAggregator> logger)
 	{
@@ -35,17 +33,10 @@ public class RedditAggregator: IAggregator
 		_categories = categoriesAggregator.GetCategories();
 	}
 
-	public Task Start()
+	public Task Start(CancellationToken cancellationToken)
 	{
-		_cancellation = _cancelTokenSource.Token;
-		_aggregatorTask = RunAggregator(_cancellation);
+		_aggregatorTask = RunAggregator(cancellationToken);
 		return _aggregatorTask;
-	}
-
-	public void Stop()
-	{
-		_cancelTokenSource.Cancel();
-		_cancelTokenSource.Dispose();
 	}
 
 	private async Task RunAggregator(CancellationToken cancellationToken)
