@@ -9,5 +9,4 @@ public record CategoryPosition
 	public string Before { get; set; } = "";
 	public string After { get; set; } = "";
 	public bool AfterEnd { get; set; }
-	public bool BeforeEnd { get; set; }
 }

@@ -63,21 +63,38 @@ public class RedditAggregator: IAggregator
 
 	private async Task<IEnumerable<Post>> GetPosts(Subreddit subreddit, CategoryPosition position)
 	{
-		var posts = subreddit.Posts.GetTop(limit: 100, after: position.After);
-		if (!posts.Any())
+		var after = position.AfterEnd ? null : position.After;
+		var before = position.AfterEnd ? position.Before : null;
+		var posts = subreddit.Posts.GetTop(limit: 100, after: after, before: before);
+		if (!position.AfterEnd)
 		{
-			_logger.LogInformation("Subreddit is end: {SubredditName}", subreddit.Name);
-			position.AfterEnd = true;
+			if (!posts.Any())
+			{
+				_logger.LogInformation("Subreddit is end: {SubredditName}", subreddit.Name);
+				position.AfterEnd = true;
+			}
+			else
+			{
+				position.After = posts.Last().Fullname;
+				if (string.IsNullOrEmpty(position.Before))
+					position.Before = posts.First().Fullname;
+			}
 		}
 		else
 		{
-			var newBefore = posts.First().Fullname;
-			var newAfter = posts.Last().Fullname;
-			position.After = newAfter;
-			var filter = Builders<CategoryPosition>.Filter.Eq(pos => pos.Title, position.Title);
-			var update = Builders<CategoryPosition>.Update.Set(pos => pos.After, newAfter).SetOnInsert(pos => pos.Before, newBefore);
-			await _positions.UpdateOneAsync(filter, update, new UpdateOptions {IsUpsert = true});
+			if (!posts.Any())
+			{
+				_logger.LogInformation("No updates for subreddit: {SubredditName}", subreddit.Name);
+				return posts;
+			}
+			position.Before = posts.First().Fullname;
 		}
+		var filter = Builders<CategoryPosition>.Filter.Eq(pos => pos.Title, position.Title);
+		var update = Builders<CategoryPosition>.Update
+			.Set(pos => pos.After, position.After)
+			.Set(pos => pos.Before, position.Before)
+			.Set(pos => pos.AfterEnd, position.AfterEnd);
+		await _positions.UpdateOneAsync(filter, update, new UpdateOptions {IsUpsert = true});
 
 		return posts;
 	}
