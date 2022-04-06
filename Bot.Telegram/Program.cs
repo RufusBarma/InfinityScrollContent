@@ -9,12 +9,23 @@ var configurationRoot = new ConfigurationBuilder()
 
 var serviceProvider = new ServiceCollection()
     .AddSingleton<IConfiguration>(configurationRoot)
-    .AddTransient<BotStartup>()
+    .AddSingleton<BotStartup>()
     .AddLogging(configure => configure.AddConsole())
     .BuildServiceProvider();
 
-var cts = new CancellationTokenSource();
-var startup = serviceProvider.GetService<BotStartup>();
-startup.Start(cts.Token);
-Console.ReadLine();
-cts.Cancel();
+var startup = serviceProvider.GetRequiredService<BotStartup>();
+var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+
+var cancellationTokenSource = new CancellationTokenSource();
+var currentTask = startup.Start(cancellationTokenSource.Token);
+
+AppDomain.CurrentDomain.ProcessExit += async (_, _) =>
+{
+	logger.LogInformation("Received SIGTERM");
+	cancellationTokenSource.Cancel();
+	await currentTask.WaitAsync(CancellationToken.None);
+	logger.LogInformation("Safety shutdown");
+	await serviceProvider.DisposeAsync();
+};
+
+await currentTask;

@@ -23,7 +23,7 @@ public class BotStartup
 
     public async Task Start(CancellationToken ctsToken)
     {
-
+	    _logger.LogInformation("Start telegram bot");
         // StartReceiving does not block the caller thread. Receiving is done on the ThreadPool.
         var receiverOptions = new ReceiverOptions
         {
