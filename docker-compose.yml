@@ -1,9 +1,21 @@
 version: '3.4'
 
 services:
+  mongodb:
+    image: mongo
+    ports:
+      - "27017:27017"
   urlresolvermicroservice:
     image: urlresolvermicroservice:latest
     build:
       context: .
       dockerfile: UrlResolverMicroservice/Dockerfile
-    network_mode: bridge
+    links:
+      - mongodb
+  contentAggregator:
+    image: content-aggregator:latest
+    build:
+      context: .
+      dockerfile: СontentAggregator/Dockerfile
+    links:
+      - mongodb
