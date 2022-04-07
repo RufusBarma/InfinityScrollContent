@@ -5,7 +5,7 @@ VisualStudioVersion = 17.0.32014.148
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestApp", "TestApp\TestApp.csproj", "{6CA29583-20D9-4139-A720-83B79E932D57}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bot.Telegram", "Bot.Telegram\Bot.Telegram.csproj", "{F01FA6E4-3326-4C94-9D5E-027E817120E1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChannelBot.Telegram", "ChannelBot.Telegram\ChannelBot.Telegram.csproj", "{F01FA6E4-3326-4C94-9D5E-027E817120E1}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UrlResolverMicroservice", "UrlResolverMicroservice\UrlResolverMicroservice.csproj", "{B25425CC-6020-4537-8A4F-1A907EBE7DA1}"
 EndProject
