@@ -1,11 +1,11 @@
+using ContentAggregator.Models;
 using LanguageExt;
 using LanguageExt.UnsafeValueAccess;
 using Microsoft.Extensions.Logging;
 using Reddit;
 using Reddit.Controllers;
-using СontentAggregator.Models;
 
-namespace СontentAggregator.Aggregators.Reddit;
+namespace ContentAggregator.Aggregators.Reddit;
 
 public static class RedditExtensions
 {

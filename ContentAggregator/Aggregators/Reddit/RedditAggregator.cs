@@ -1,4 +1,5 @@
-﻿using LanguageExt;
+﻿using ContentAggregator.Models;
+using LanguageExt;
 using LanguageExt.UnsafeValueAccess;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -6,9 +7,8 @@ using MongoDB.Driver;
 using MoreLinq;
 using Reddit;
 using Reddit.Controllers;
-using СontentAggregator.Models;
 
-namespace СontentAggregator.Aggregators.Reddit;
+namespace ContentAggregator.Aggregators.Reddit;
 
 public class RedditAggregator: IAggregator
 {

@@ -5,8 +5,6 @@ VisualStudioVersion = 17.0.32014.148
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestApp", "TestApp\TestApp.csproj", "{6CA29583-20D9-4139-A720-83B79E932D57}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "СontentAggregator", "СontentAggregator\СontentAggregator.csproj", "{C95A5862-CF37-4E1E-818C-E7585973C24B}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bot.Telegram", "Bot.Telegram\Bot.Telegram.csproj", "{F01FA6E4-3326-4C94-9D5E-027E817120E1}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UrlResolverMicroservice", "UrlResolverMicroservice\UrlResolverMicroservice.csproj", "{B25425CC-6020-4537-8A4F-1A907EBE7DA1}"
@@ -14,6 +12,8 @@ EndProject
 Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{B81CDD41-4E2C-4B5F-858C-5C976FBFC625}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client.Telegram", "Client.Telegram\Client.Telegram.csproj", "{E2722510-805D-4B13-818D-5CCD959CD737}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ContentAggregator", "ContentAggregator\ContentAggregator.csproj", "{BC890C30-5CBE-4A5E-B86F-0DBAE1BB5A33}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,10 +25,6 @@ Global
 		{6CA29583-20D9-4139-A720-83B79E932D57}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6CA29583-20D9-4139-A720-83B79E932D57}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6CA29583-20D9-4139-A720-83B79E932D57}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C95A5862-CF37-4E1E-818C-E7585973C24B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C95A5862-CF37-4E1E-818C-E7585973C24B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C95A5862-CF37-4E1E-818C-E7585973C24B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C95A5862-CF37-4E1E-818C-E7585973C24B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F01FA6E4-3326-4C94-9D5E-027E817120E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F01FA6E4-3326-4C94-9D5E-027E817120E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F01FA6E4-3326-4C94-9D5E-027E817120E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -45,6 +41,10 @@ Global
 		{E2722510-805D-4B13-818D-5CCD959CD737}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E2722510-805D-4B13-818D-5CCD959CD737}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E2722510-805D-4B13-818D-5CCD959CD737}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BC890C30-5CBE-4A5E-B86F-0DBAE1BB5A33}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BC890C30-5CBE-4A5E-B86F-0DBAE1BB5A33}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BC890C30-5CBE-4A5E-B86F-0DBAE1BB5A33}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BC890C30-5CBE-4A5E-B86F-0DBAE1BB5A33}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

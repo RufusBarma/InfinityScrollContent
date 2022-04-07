@@ -1,6 +1,6 @@
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace СontentAggregator.Models;
+namespace ContentAggregator.Models;
 
 public record CategoryPosition
 {

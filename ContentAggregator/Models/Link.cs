@@ -1,4 +1,4 @@
-namespace СontentAggregator.Models;
+namespace ContentAggregator.Models;
 
 public abstract record Link
 {

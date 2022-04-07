@@ -1,10 +1,10 @@
 ﻿using System.Net;
+using ContentAggregator.Models;
 using HtmlAgilityPack;
 using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
-using СontentAggregator.Models;
 
-namespace СontentAggregator.Aggregators.Reddit;
+namespace ContentAggregator.Aggregators.Reddit;
 
 public class RedditCategoriesAggregator
 {

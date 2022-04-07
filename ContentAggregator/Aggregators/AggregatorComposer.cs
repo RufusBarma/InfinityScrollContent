@@ -1,4 +1,4 @@
-﻿namespace СontentAggregator.Aggregators;
+﻿namespace ContentAggregator.Aggregators;
 
 public class AggregatorComposer
 {

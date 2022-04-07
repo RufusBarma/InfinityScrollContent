@@ -1,8 +1,8 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using ContentAggregator.Aggregators;
+using ContentAggregator.Aggregators.Reddit;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using СontentAggregator.Aggregators;
-using СontentAggregator.Aggregators.Reddit;
 
 var configurationRoot = new ConfigurationBuilder()
 	.AddEnvironmentVariables()

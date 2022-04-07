@@ -1,6 +1,6 @@
 using MongoDB.Driver;
 
-namespace СontentAggregator.Models;
+namespace ContentAggregator.Models;
 
 public static class CategoryExtensions
 {
