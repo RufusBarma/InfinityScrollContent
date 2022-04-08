@@ -22,10 +22,10 @@ public class RedditAggregator: IAggregator
 	public RedditAggregator(IConfiguration config, RedditCategoriesAggregator categoriesAggregator, ILogger<RedditAggregator> logger)
 	{
 		_logger = logger;
-		var appId = config["app_id_reddit"];
-		var refreshToken = config["refresh_token_reddit"];
-		var appSecret = config["app_secret_reddit"];
-		var accessToken = config["access_token_reddit"];
+		var appId = config.GetRequiredSection("app_id_reddit").Value;
+		var refreshToken = config.GetRequiredSection("refresh_token_reddit").Value;
+		var appSecret = config.GetRequiredSection("app_secret_reddit").Value;
+		var accessToken = config.GetRequiredSection("access_token_reddit").Value;
 		_reddit = new RedditClient(appId, refreshToken, appSecret, accessToken);
 		var redditDb = new MongoClient(config.GetConnectionString("DefaultConnection")).GetDatabase("Reddit");
 		_linkCollection = redditDb.GetCollection<RedditLink>("Links");
@@ -41,7 +41,7 @@ public class RedditAggregator: IAggregator
 
 	private async Task RunAggregator(CancellationToken cancellationToken)
 	{
-		var categoryItems = _categories.Shuffle().Take(5);
+		var categoryItems = _categories;//.Shuffle().Take(5);
 		foreach (var linksTask in categoryItems
 			         .Select(category => (category, Subreddit: _reddit.GetSubreddit(category.Title, _logger)))
 			         .Where(tuple => tuple.Subreddit.IsSome)
