@@ -12,10 +12,12 @@ public class RedditGalleryResolver: IUrlResolver
 		var urlJson = $"{url.Replace("gallery", "comments")}.json";
 		var client = new RestClient(urlJson);
 		var response = await client.ExecuteGetTaskAsync(new RestRequest());
-		if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Gone)
+		if (response.StatusCode is not HttpStatusCode.OK)
 			return response.StatusDescription;
 		var data = JArray.Parse(response.Content);
 		var mediaParent = data[0]["data"]["children"][0]["data"]["media_metadata"];
+		if (mediaParent == null)
+			return "Deleted by user";
 		var urls = new List<string>();
 		foreach (var media in mediaParent.Children<JProperty>())
 		{

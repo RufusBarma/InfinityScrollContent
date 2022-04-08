@@ -15,7 +15,7 @@ public class RedGifsResolver : IUrlResolver
 		var id = url.Remove(0, url.LastIndexOf('/') + 1).ToLower();
 		var client = new RestClient($"https://api.redgifs.com/v2/gifs/{id}");
 		var response = await client.ExecuteGetTaskAsync(_request);
-		if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Gone)
+		if (response.StatusCode is not HttpStatusCode.OK)
 			return response.StatusDescription;
 		var data = JObject.Parse(response.Content);
 		var urls = data["gif"]["urls"];

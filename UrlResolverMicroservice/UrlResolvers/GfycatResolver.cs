@@ -21,7 +21,7 @@ public class GfycatResolver : IUrlResolver
 		var id = url.Remove(0, url.LastIndexOf('/') + 1);
 		var client = new RestClient($"https://api.gfycat.com/v1/gfycats/{id}");
 		var response = await client.ExecuteGetTaskAsync(_request);
-		if (response.StatusCode == HttpStatusCode.NotFound || response.StatusCode == HttpStatusCode.Gone)
+		if (response.StatusCode is not HttpStatusCode.OK)
 			return await GetFromRedGifs(url);
 		var data = JObject.Parse(response.Content);
 		var resultUrl = data["gfyItem"]["mp4Url"].Value<string>();

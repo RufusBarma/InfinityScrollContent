@@ -9,17 +9,27 @@ namespace UrlResolverMicroservice.UrlResolvers;
 
 public class ImgurResolver: IUrlResolver
 {
-	private Dictionary<string, (Func<string, string> getEndpoint, Func<JObject, string[]> getUrls)> _endpoints = new()
+	private (Func<string, string> getEndpoint, Func<JObject, string[]> getUrls) _endpoints(string key) => key switch
 	{
-		{"", (hash => $"https://api.imgur.com/3/image/{hash}", data => new []{data["data"]["link"].Value<string>()})},
-		{"a", (hash => $"https://api.imgur.com/3/album/{hash}/images", 
-			data => data["data"].Children()
-				.Select(image => image.Value<string>("mp4") ?? image.Value<string>("link"))
-				.ToArray())},
-		{"gallery", (hash => $"https://api.imgur.com/3/gallery/album/{hash}", 
+		"" => (hash => $"https://api.imgur.com/3/image/{hash}", data => new []{data["data"].Value<string>("mp4") ?? data["data"].Value<string>("link")}),
+		"a" => (hash => $"https://api.imgur.com/3/album/{hash}/images", 
+			baseData =>
+			{
+				var data = baseData["data"];
+				if (data is JArray)
+					return data.Children()
+						.Select(image => image.Value<string>("mp4") ?? image.Value<string>("link"))
+						.ToArray();
+				else
+					return data["images"].Children()
+						.Select(image => image.Value<string>("mp4") ?? image.Value<string>("link"))
+						.ToArray();
+			}),
+		"gallery" => (hash => $"https://api.imgur.com/3/gallery/album/{hash}", 
 			data => data["data"]["link"]["images"]
 				.Select(image => image["link"].Value<string>())
-				.ToArray())}
+				.ToArray()),
+		"r" => _endpoints("")
 	};
 
 	private readonly RestRequest _request;
@@ -36,13 +46,13 @@ public class ImgurResolver: IUrlResolver
 	public async Task<Either<string, string[]>> ResolveAsync(string url)
 	{
 		var urlParts = url.Split('/').SkipUntil(part => part.Contains("imgur.com")).ToList();
-		var endpointFuncs = urlParts.Count > 1 ? _endpoints[urlParts[0]] : _endpoints[""];
+		var endpointFuncs = urlParts.Count > 1 ? _endpoints(urlParts[0]) : _endpoints("");
 		var client = new RestClient(endpointFuncs.getEndpoint(urlParts.Last()))
 		{
 			Timeout = -1
 		};
 		var response = await client.ExecuteGetTaskAsync(_request);
-		if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Gone)
+		if (response.StatusCode is not HttpStatusCode.OK)
 			return response.StatusDescription;
 		var data = JObject.Parse(response.Content);
 		var urls = endpointFuncs.getUrls(data);

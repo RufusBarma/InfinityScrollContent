@@ -51,7 +51,10 @@ public class MainResolver : IMainResolver
 	private async Task<Either<string, string[]>> GetUrlsAsync(string url)
 	{
 		if (Path.HasExtension(url))
-			return new[] { url };
+			if (url.Contains("imgur"))
+				url = Path.ChangeExtension(url, null);
+			else
+				return new[] { url };
 		return await Prelude.Optional(_urlResolvers.FirstOrDefault(resolver => resolver.CanResolve(url)))
 			.MatchAsync(
 				async resolver => await resolver.ResolveAsync(url), 
