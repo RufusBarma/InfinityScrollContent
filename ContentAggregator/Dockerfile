@@ -6,7 +6,7 @@ WORKDIR /src
 COPY ["ContentAggregator/ContentAggregator.csproj", "ContentAggregator/"]
 RUN dotnet restore "ContentAggregator/ContentAggregator.csproj"
 COPY . .
-WORKDIR "/src/СontentAggregator"
+WORKDIR "/src/ContentAggregator"
 RUN dotnet build "ContentAggregator.csproj" -c Release -o /app/build
 
 FROM build AS publish
