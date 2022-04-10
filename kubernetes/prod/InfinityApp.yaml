@@ -17,7 +17,7 @@ spec:
        app: infinityapp
    spec:
      containers:
-       - image: registry.services/content_aggregator/image:latest
+       - image: registry.gitlab.com/rufusbarma/infinityscrollcontent/content_aggregator/image:latest
          imagePullPolicy: Always
          name: infinityapp
          ports:
