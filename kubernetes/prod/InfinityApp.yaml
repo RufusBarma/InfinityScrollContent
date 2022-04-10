@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+ name: infinityapp
+spec:
+ replicas: 1
+ selector:
+   matchLabels:
+     app.kubernetes.io/name: infinityapp
+ minReadySeconds: 15
+ strategy:
+   type: RollingUpdate
+ template:
+   metadata:
+     labels:
+       app.kubernetes.io/name: infinityapp
+       app: infinityapp
+   spec:
+     containers:
+       - image: registry.services/content_aggregator/image:latest
+         imagePullPolicy: Always
+         name: infinityapp
+         ports:
+           - containerPort: 8080
+
+     imagePullSecrets:
+     - name: registry-credentials
