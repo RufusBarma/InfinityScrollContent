@@ -19,3 +19,16 @@ services:
       dockerfile: СontentAggregator/Dockerfile
     links:
       - mongodb
+  clientTelegram:
+    image: client-telegram:latest
+    build:
+      context: .
+      dockerfile: Client.Telegram/Dockerfile
+    links:
+      - mongodb    
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
