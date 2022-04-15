@@ -36,11 +36,19 @@ public class MainResolver : IMainResolver
 				break;
 
 			var urlsEither = await GetUrlsAsync(link.SourceUrl);
+			var skipFlag = false;
 			var update = urlsEither.Match(urls => Builders<Link>.Update
 					.Set(updLink => updLink.Urls, urls)
 					.Set(updLink => updLink.Type, GetLinkType(urls.First()))
 					.Set(updLink => updLink.IsGallery, urls.Length > 1),
-				error => Builders<Link>.Update.Set(updLink => updLink.ErrorMessage, error));
+				error =>
+				{
+					if (error == "Skip")
+						skipFlag = true;
+					return Builders<Link>.Update.Set(updLink => updLink.ErrorMessage, error);
+				});
+			if (skipFlag)
+				continue;
 
 			var updateFilter = Builders<Link>.Filter.Eq("_id", link._id);
 			await _linkCollection.UpdateOneAsync(updateFilter, update, new UpdateOptions(){IsUpsert = true});
@@ -57,7 +65,12 @@ public class MainResolver : IMainResolver
 				return new[] { url };
 		return await Prelude.Optional(_urlResolvers.FirstOrDefault(resolver => resolver.CanResolve(url)))
 			.MatchAsync(
-				async resolver => await resolver.ResolveAsync(url), 
+				async resolver =>
+				{
+					if (resolver.LimitRich())
+						return "Skip";
+					return await resolver.ResolveAsync(url);
+				}, 
 				() => {
 					_logger.LogWarning("Resolver doesn't exist for {Url}", url);
 					return "Resolver doesn't exist";

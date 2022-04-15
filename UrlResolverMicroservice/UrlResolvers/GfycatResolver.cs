@@ -33,4 +33,6 @@ public class GfycatResolver : IUrlResolver
 	public bool CanResolve(string url) => url.Contains("gfycat.com");
 
 	private Task<Either<string, string[]>> GetFromRedGifs(string url) => _redGifsResolver.ResolveAsync(url);
+
+	public bool LimitRich() => false;
 }

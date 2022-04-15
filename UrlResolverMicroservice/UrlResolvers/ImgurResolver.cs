@@ -60,4 +60,6 @@ public class ImgurResolver: IUrlResolver
 	}
 
 	public bool CanResolve(string url) => url.Contains("imgur.com");
+
+	public bool LimitRich() => false;
 }

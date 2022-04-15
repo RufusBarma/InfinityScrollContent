@@ -30,4 +30,6 @@ public class RedditGalleryResolver: IUrlResolver
 	}
 
 	public bool CanResolve(string url) => url.Contains("reddit.com/gallery/");
+
+	public bool LimitRich() => false;
 }

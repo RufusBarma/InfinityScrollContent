@@ -24,4 +24,6 @@ public class RedGifsResolver : IUrlResolver
 	}
 
 	public bool CanResolve(string url) => url.Contains("redgifs.com");
+
+	public bool LimitRich() => false;
 }

@@ -1,0 +1,34 @@
+version: '3.4'
+
+services:
+  mongodb:
+    image: mongo
+    ports:
+      - "27017:27017"
+  urlresolvermicroservice:
+    image: urlresolvermicroservice:latest
+    build:
+      context: .
+      dockerfile: UrlResolverMicroservice/Dockerfile
+    links:
+      - mongodb
+  contentAggregator:
+    image: content-aggregator:latest
+    build:
+      context: .
+      dockerfile: СontentAggregator/Dockerfile
+    links:
+      - mongodb
+  clientTelegram:
+    image: client-telegram:latest
+    build:
+      context: .
+      dockerfile: Client.Telegram/Dockerfile
+    links:
+      - mongodb
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s

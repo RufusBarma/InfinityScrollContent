@@ -6,4 +6,5 @@ public interface IUrlResolver
 {
 	Task<Either<string, string[]>> ResolveAsync(string url);
 	bool CanResolve(string url);
+	bool LimitRich();
 }
