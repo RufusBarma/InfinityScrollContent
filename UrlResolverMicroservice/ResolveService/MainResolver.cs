@@ -39,7 +39,7 @@ public class MainResolver : IMainResolver
 			var skipFlag = false;
 			var update = urlsEither.Match(urls => Builders<Link>.Update
 					.Set(updLink => updLink.Urls, urls)
-					.Set(updLink => updLink.Type, GetLinkType(urls.First()))
+					.Set(updLink => updLink.Type, GetLinkType(urls.FirstOrDefault()))
 					.Set(updLink => updLink.IsGallery, urls.Length > 1),
 				error =>
 				{
@@ -77,11 +77,18 @@ public class MainResolver : IMainResolver
 				});
 	}
 
-	private LinkType GetLinkType(string url)
+	private LinkType GetLinkType(string? url)
 	{
-		if (!Path.HasExtension(url))
+		if (url == null || !Path.HasExtension(url))
 			return LinkType.None;
-		_linkTypes.TryGetValue(Path.GetExtension(url), out var defaultType);
-		return defaultType;
+		var photoExts = new[] {".png", ".jpeg", ".jpg"};
+		var extension = Path.GetExtension(url).ToLower();
+		if (photoExts.Any(ext => ext == extension))
+			return LinkType.Img;
+		if (extension == ".gif")
+			return LinkType.Gif;
+		if (extension == ".mp4")
+			return LinkType.Video;
+		return LinkType.None;
 	}
 }

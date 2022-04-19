@@ -1,14 +1,18 @@
 using System.Net;
 using LanguageExt;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using MoreLinq.Extensions;
 using Newtonsoft.Json.Linq;
 using RestSharp;
+using UrlResolverMicroservice.Extensions;
 
 namespace UrlResolverMicroservice.UrlResolvers;
 
 public class ImgurResolver: IUrlResolver
 {
+	private readonly IDistributedCache _distributedCache;
+	private bool _limitRich = false;
 	private (Func<string, string> getEndpoint, Func<JObject, string[]> getUrls) _endpoints(string key) => key switch
 	{
 		"" => (hash => $"https://api.imgur.com/3/image/{hash}", data => new []{data["data"].Value<string>("mp4") ?? data["data"].Value<string>("link")}),
@@ -34,8 +38,9 @@ public class ImgurResolver: IUrlResolver
 
 	private readonly RestRequest _request;
 
-	public ImgurResolver(IConfiguration configuration)
+	public ImgurResolver(IConfiguration configuration, IDistributedCache distributedCache)
 	{
+		_distributedCache = distributedCache;
 		//TODO implement api limits on application side
 		var clientId = configuration.GetSection("Imgur")["ClientId"];
 		_request = new RestRequest(Method.GET);
@@ -52,6 +57,12 @@ public class ImgurResolver: IUrlResolver
 			Timeout = -1
 		};
 		var response = await client.ExecuteGetTaskAsync(_request);
+		if (int.Parse((string) response.Headers.FirstOrDefault(header => header.Name == "X-RateLimit-UserRemaining")?.Value ?? "0") <= 1)
+		{
+			var options = new DistributedCacheEntryOptions()
+				.SetAbsoluteExpiration(new TimeSpan(1, 0, 0, 0));
+			await _distributedCache.SetAsync("Imgur.LimitRich", true, options);
+		}
 		if (response.StatusCode is not HttpStatusCode.OK)
 			return response.StatusDescription;
 		var data = JObject.Parse(response.Content);
@@ -61,5 +72,5 @@ public class ImgurResolver: IUrlResolver
 
 	public bool CanResolve(string url) => url.Contains("imgur.com");
 
-	public bool LimitRich() => false;
+	public bool LimitRich() => _distributedCache.GetBooleanAsync("Imgur.LimitRich").Result;
 }

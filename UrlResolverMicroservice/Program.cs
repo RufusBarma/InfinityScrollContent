@@ -11,6 +11,10 @@ var configurationRoot = new ConfigurationBuilder()
 	.Build();
 
 var serviceProvider = new ServiceCollection()
+	.AddStackExchangeRedisCache(options =>
+	{
+		options.Configuration = "localhost:6379";
+	})
 	.AddSingleton<IMainResolver, MainResolver>()
 	.AddSingleton<IUrlResolver, ImgurResolver>()
 	.AddSingleton<IUrlResolver, RedditGalleryResolver>()
