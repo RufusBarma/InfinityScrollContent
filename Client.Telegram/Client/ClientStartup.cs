@@ -20,10 +20,21 @@ public class ClientStartup
 		});
 		_client.LoginUserIfNeeded();
 	}
-	
+
 	public async Task Start(CancellationToken cancellationToken)
 	{
-		// var chats = await _client.Contacts_ResolveUsername("");
-		// await _client.SendMessageAsync(chats, "Hello, World");
+		var chats = await _client.Messages_GetAllChats();
+		var channel = chats.chats[0000000000];
+
+		var file1 = await _client.UploadFileAsync(@"5.jpg", withCompression:true);
+		var file2 = await _client.UploadFileAsync(@"Z.jpg", withCompression:true);
+		var file3 = await _client.UploadFileAsync(@"2.jpg", withCompression:true);
+		var uploaded = new[]
+		{
+			new InputMediaUploadedPhoto {file = file1},
+			new InputMediaUploadedPhoto {file = file2},
+			new InputMediaUploadedPhoto {file = file3},
+		};
+		await _client.SendAlbumAsync(channel, uploaded);
 	}
 }
