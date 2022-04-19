@@ -3,19 +3,28 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
+using Telegram.Bot;
 
 var configurationRoot = new ConfigurationBuilder()
-    .AddEnvironmentVariables()
-    .Build();
+	.AddEnvironmentVariables()
+	.AddJsonFile("appsettings.json")
+	.Build();
 
 var serviceProvider = new ServiceCollection()
-    .AddSingleton<IConfiguration>(configurationRoot)
-    .AddSingleton<BotStartup>()
-    .AddLogging(configure => configure.AddConsole())
-    .AddSingleton<IMongoClient, MongoClient>(sp => new MongoClient(configurationRoot.GetConnectionString("DefaultConnection")))
-    .BuildServiceProvider();
+	.AddSingleton<ITelegramBotClient>(sp =>
+	{
+		var token = configurationRoot["telegram.bot.token"];
+		return new TelegramBotClient(token);
+	})
+	.AddSingleton<IConfiguration>(configurationRoot)
+	.AddSingleton<BotStartup>()
+	.AddLogging(configure => configure.AddConsole())
+	.AddSingleton<IMongoClient, MongoClient>(sp =>
+		new MongoClient(configurationRoot.GetConnectionString("DefaultConnection")))
+	.AddSingleton<MailingQueue>()
+	.BuildServiceProvider();
 
-var startup = serviceProvider.GetRequiredService<BotStartup>();
+var startup = serviceProvider.GetRequiredService<MailingQueue>();
 var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
 
 var cancellationTokenSource = new CancellationTokenSource();

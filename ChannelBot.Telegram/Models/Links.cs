@@ -8,8 +8,7 @@ public enum LinkType
 	None,
 	Video,
 	Img,
-	Gif,
-	Album
+	Gif
 }
 
 [BsonIgnoreExtraElements]
@@ -21,4 +20,5 @@ public record Link
 	public LinkType Type { get; set; }
 	public bool IsGallery { get; set; }
 	public string ErrorMessage { get; set; }
+	public int UpVotes { get; init; }
 }
