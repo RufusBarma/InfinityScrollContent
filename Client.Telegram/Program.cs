@@ -2,15 +2,19 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using MongoDB.Driver;
 
 var configurationRoot = new ConfigurationBuilder()
 	.AddEnvironmentVariables()
+	.AddJsonFile("appsettings.json")
 	.Build();
 
 var serviceProvider = new ServiceCollection()
 	.AddSingleton<IConfiguration>(configurationRoot)
 	.AddSingleton<ClientStartup>()
 	.AddLogging(configure => configure.AddConsole())
+	.AddSingleton<IMongoClient, MongoClient>(sp =>
+		new MongoClient(configurationRoot.GetConnectionString("DefaultConnection")))
 	.BuildServiceProvider();
 
 var startup = serviceProvider.GetRequiredService<ClientStartup>();
