@@ -26,15 +26,22 @@ public class ClientStartup
 		var chats = await _client.Messages_GetAllChats();
 		var channel = chats.chats[0000000000];
 
-		var file1 = await _client.UploadFileAsync(@"5.jpg", withCompression:true);
-		var file2 = await _client.UploadFileAsync(@"Z.jpg", withCompression:true);
-		var file3 = await _client.UploadFileAsync(@"2.jpg", withCompression:true);
-		var uploaded = new[]
-		{
-			new InputMediaUploadedPhoto {file = file1},
-			new InputMediaUploadedPhoto {file = file2},
-			new InputMediaUploadedPhoto {file = file3},
-		};
-		await _client.SendAlbumAsync(channel, uploaded);
+		// var file1 = await _client.UploadFileAsync(@"1.jpg", withCompression:true);
+		// var file2 = await _client.UploadFileAsync(@"2.jpg", withCompression:true);
+		// var file3 = await _client.UploadFileAsync(@"3.jpg", withCompression:true);
+		// var uploaded = new[]
+		// {
+		// 	new InputMediaUploadedPhoto {file = file1},
+		// 	new InputMediaUploadedPhoto {file = file2},
+		// 	new InputMediaUploadedPhoto {file = file3}
+		// };
+		var medias = new[]
+			{
+				"url1",
+				"url2",
+			}
+			.Select(url => new InputMediaPhotoExternal {url = url})
+			.ToArray();
+		await _client.SafeSendAlbumAsync(channel, medias);
 	}
 }
