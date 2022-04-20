@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using MediaToolkit;
 using TL;
 using WTelegram;
 
@@ -71,6 +72,7 @@ public static class TelegramClientExtensions
 			convertedMedias[i] = ism switch
 			{
 				InputMediaPhotoExternal image => await GetPhoto(image, client),
+				InputMediaDocumentExternal document => await GetDocument(document, client),
 				_ => ism
 			};
 		}
@@ -100,6 +102,72 @@ public static class TelegramClientExtensions
 				await using var resized = Resize(stream);
 				resized.Position = 0;
 				return await client.UploadFileAsync(resized, filename);
+			}
+		}
+	}
+
+	private static async Task<InputMedia> GetDocument(InputMediaDocumentExternal document, WTelegram.Client client)
+	{
+		//TODO refactoring need
+		var inputFile = await UploadFromUrl(document.url);
+		return inputFile;
+
+		async Task<InputMediaUploadedDocument> UploadFromUrl(string url)
+		{
+			var httpClient = new HttpClient();
+			var filename = Path.GetFileName(new Uri(url).LocalPath);
+			var response = await httpClient.GetAsync(url);
+			using var stream = await response.Content.ReadAsStreamAsync();
+			var mimeType = response.Content.Headers.ContentType?.MediaType;
+			if (mimeType != "video/mp4")
+			{
+				if (response.Content.Headers.ContentLength is long length)
+				{
+					var indirect = new Helpers.IndirectStream(stream) {ContentLength = length};
+					return new InputMediaUploadedDocument {file = await client.UploadFileAsync(indirect, filename)};
+				}
+				else
+				{
+					await using var ms = new MemoryStream();
+					await stream.CopyToAsync(ms);
+					ms.Position = 0;
+					return new InputMediaUploadedDocument {file = await client.UploadFileAsync(ms, filename)};
+				}
+			}
+			else
+			{
+				if (!Directory.Exists("tmp"))
+					Directory.CreateDirectory("tmp");
+				var filePath = Path.Combine("tmp", filename);
+				var fileInfo = new FileInfo(filePath);
+				using (var fileStream = fileInfo.OpenWrite())
+				{
+					await stream.CopyToAsync(fileStream);
+					if (response.Content.Headers.ContentLength is long length)
+					{
+						var indirect = new Helpers.IndirectStream(stream) {ContentLength = length};
+						await indirect.CopyToAsync(fileStream);
+					}
+					else
+						await stream.CopyToAsync(fileStream);
+				}
+				var inputFile = new MediaToolkit.Model.MediaFile { Filename = filePath };
+				using (var engine = new Engine())
+				{
+					engine.GetMetadata(inputFile);
+				}
+				var duration = inputFile.Metadata.Duration.TotalSeconds;
+				var size = inputFile.Metadata.VideoData.FrameSize?.Split('x');
+				var inputFileClient = await client.UploadFileAsync(filePath);
+				return new InputMediaUploadedDocument
+				{
+					file = inputFileClient, mime_type = "video/mp4",
+					attributes = new[]
+					{
+						new DocumentAttributeVideo
+							{duration = (int)duration, w = int.Parse(size[0]), h = int.Parse(size[1]), flags = DocumentAttributeVideo.Flags.supports_streaming}
+					}
+				};
 			}
 		}
 	}

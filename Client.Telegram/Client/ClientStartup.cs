@@ -30,6 +30,7 @@ public class ClientStartup
 
 	public async Task Start(CancellationToken cancellationToken)
 	{
+		ClearCache();
 		var chats = await _client.Messages_GetAllChats();
 		var channel = chats.chats[0000000000];
 		Expression<Func<Link, bool>> filter = link =>
@@ -54,5 +55,11 @@ public class ClientStartup
 				await Task.Delay(1000);
 			}
 		}
+	}
+
+	private void ClearCache()
+	{
+		if (Directory.Exists("tmp"))
+			Directory.Delete("tmp");
 	}
 }
