@@ -1,8 +1,9 @@
-using System.Drawing;
-using System.Drawing.Drawing2D;
 using MediaToolkit;
+using Microsoft.Maui.Graphics;
+using Microsoft.Maui.Graphics.Platform;
 using TL;
 using WTelegram;
+using Size = Microsoft.Maui.Graphics.Size;
 
 namespace Client.Telegram.Client;
 
@@ -31,19 +32,19 @@ public static class TelegramClientExtensions
 
 	private static Stream Resize(Stream stream)
 	{
-		var imgToResize = Image.FromStream(stream);
+		var imgToResize = PlatformImage.FromStream(stream);
 		var size = new Size(1280, 1280);
 		//Get the image current width
 		var sourceWidth = imgToResize.Width;
 		//Get the image current height
 		var sourceHeight = imgToResize.Height;
-		float nPercent = 0;
-		float nPercentW = 0;
-		float nPercentH = 0;
+		double nPercent = 0;
+		double nPercentW = 0;
+		double nPercentH = 0;
 		//Calulate  width with new desired size
-		nPercentW = size.Width / (float) sourceWidth;
+		nPercentW = size.Width / sourceWidth;
 		//Calculate height with new desired size
-		nPercentH = size.Height / (float) sourceHeight;
+		nPercentH = size.Height / sourceHeight;
 		if (nPercentH < nPercentW)
 			nPercent = nPercentH;
 		else
@@ -52,15 +53,9 @@ public static class TelegramClientExtensions
 		var destWidth = (int) (sourceWidth * nPercent);
 		//New Height
 		var destHeight = (int) (sourceHeight * nPercent);
-		var b = new Bitmap(destWidth, destHeight);
-		var g = Graphics.FromImage(b);
-		g.InterpolationMode = InterpolationMode.HighQualityBicubic;
 		// Draw image with new width and height
-		g.DrawImage(imgToResize, 0, 0, destWidth, destHeight);
-		g.Dispose();
-		var output = new MemoryStream();
-		b.Save(output, imgToResize.RawFormat);
-		return output;
+		var newImage = imgToResize.Resize(destWidth, destHeight, ResizeMode.Fit, true);
+		return newImage.AsStream();
 	}
 
 	public static async Task<Message> SafeSendAlbumAsync(this WTelegram.Client client, InputPeer peer, InputMedia[] medias, string caption = null, int reply_to_msg_id = 0, MessageEntity[] entities = null, DateTime schedule_date = default)

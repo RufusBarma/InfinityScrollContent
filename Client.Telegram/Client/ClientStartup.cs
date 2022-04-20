@@ -40,15 +40,14 @@ public class ClientStartup
 		var limit = 1;
 		while (!cancellationToken.IsCancellationRequested && limit-- > 0)
 		{
-			var document = await _linkCollection.Find(filter).ToListAsync();//.Limit(1).Skip(rnd.Next(count)).ToListAsync();
-			var doc = document[2];
+			var document = await _linkCollection.Find(filter).Skip(rnd.Next(count)).FirstOrDefaultAsync();
 			var photoExts = new[] {"png", "jpeg", "jpg"};
-			var urlChunks = doc.Urls.Select(url => (InputMedia)
+			var mediaGroups = document.Urls.Select(url => (InputMedia)
 					(photoExts.Any(ext => ext == Path.GetExtension(url).Remove(0, 1).ToLower())
 						? new InputMediaPhotoExternal {url = url}
 						: new InputMediaDocumentExternal {url = url}))
 				.GroupBy(media => media.GetType());
-			foreach (var mediaGroup in urlChunks.Skip(1))
+			foreach (var mediaGroup in mediaGroups)
 			foreach (var urlChunk in mediaGroup.Chunk(10))
 			{
 				await _client.SafeSendAlbumAsync(channel, urlChunk);
