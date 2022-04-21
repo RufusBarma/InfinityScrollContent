@@ -1,9 +1,9 @@
 using MediaToolkit;
-using Microsoft.Maui.Graphics;
-using Microsoft.Maui.Graphics.Platform;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
+using SixLabors.ImageSharp.Processing;
 using TL;
 using WTelegram;
-using Size = Microsoft.Maui.Graphics.Size;
 
 namespace Client.Telegram.Client;
 
@@ -20,42 +20,31 @@ public static class TelegramClientExtensions
 		var extension = Path.GetExtension(pathname).ToLower();
 		if (string.IsNullOrEmpty(extension) || !withCompression || !imageExtensions.Contains(extension))
 			return await client.UploadFileAsync(pathname, progress);
-		var compressedPhoto = Resize(pathname);
-		compressedPhoto.Position = 0;
+		var compressedPhoto = await Resize(pathname);
 		return await client.UploadFileAsync(compressedPhoto, Path.GetFileName(pathname), progress);
 	}
 
-	private static Stream Resize(string path)
+	private static async Task<Stream> Resize(string path)
 	{
-		return Resize(File.OpenRead(path));
+		return await Resize(File.OpenRead(path));
 	}
 
-	private static Stream Resize(Stream stream)
+	private static async Task<Stream> Resize(Stream stream)
 	{
-		var imgToResize = PlatformImage.FromStream(stream);
-		var size = new Size(1280, 1280);
-		//Get the image current width
-		var sourceWidth = imgToResize.Width;
-		//Get the image current height
-		var sourceHeight = imgToResize.Height;
-		double nPercent = 0;
-		double nPercentW = 0;
-		double nPercentH = 0;
-		//Calulate  width with new desired size
-		nPercentW = size.Width / sourceWidth;
-		//Calculate height with new desired size
-		nPercentH = size.Height / sourceHeight;
-		if (nPercentH < nPercentW)
-			nPercent = nPercentH;
-		else
-			nPercent = nPercentW;
-		//New Width
-		var destWidth = (int) (sourceWidth * nPercent);
-		//New Height
-		var destHeight = (int) (sourceHeight * nPercent);
-		// Draw image with new width and height
-		var newImage = imgToResize.Resize(destWidth, destHeight, ResizeMode.Fit, true);
-		return newImage.AsStream();
+		(Image Image, IImageFormat Format) imf = await Image.LoadWithFormatAsync(stream);
+		using var image = imf.Image;
+		var maxSize = Math.Max(image.Width, image.Height);
+		if (maxSize <= 1280)
+		{
+			stream.Position = 0;
+			return stream;
+		}
+		
+		image.Mutate(x => x.Resize(new ResizeOptions {Mode = ResizeMode.Max, Size = new Size(1280, 1280)}));
+		var output = new MemoryStream();
+		await image.SaveAsync(output, imf.Format); 
+		output.Position = 0;
+		return output;
 	}
 
 	public static async Task<Message> SafeSendAlbumAsync(this WTelegram.Client client, InputPeer peer, InputMedia[] medias, string caption = null, int reply_to_msg_id = 0, MessageEntity[] entities = null, DateTime schedule_date = default)
@@ -88,14 +77,12 @@ public static class TelegramClientExtensions
 			if (response.Content.Headers.ContentLength is long length)
 			{
 				var content = new Helpers.IndirectStream(stream) {ContentLength = length};
-				await using var resized = Resize(content);
-				resized.Position = 0;
+				await using var resized = await Resize(content);
 				return await client.UploadFileAsync(resized, filename);
 			}
 			else
 			{
-				await using var resized = Resize(stream);
-				resized.Position = 0;
+				await using var resized = await Resize(stream);
 				return await client.UploadFileAsync(resized, filename);
 			}
 		}

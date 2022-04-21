@@ -17,8 +17,8 @@
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" />
       <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.1" />
       <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="6.0.0" />
-      <PackageReference Include="Microsoft.Maui.Graphics" Version="6.0.300-rc.1.1215" />
       <PackageReference Include="MongoDB.Driver" Version="2.15.0" />
+      <PackageReference Include="SixLabors.ImageSharp" Version="2.1.1" />
       <PackageReference Include="System.Configuration.ConfigurationManager" Version="7.0.0-preview.3.22175.4" />
       <PackageReference Include="WTelegramClient" Version="2.2.1" />
     </ItemGroup>
