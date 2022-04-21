@@ -8,6 +8,8 @@ namespace Client.Telegram.Client;
 
 public static class TelegramClientExtensions
 {
+	private const int TenMegaBytes = 10 * 1024 * 1024;
+
 	/// <summary>Helper function to upload a file to Telegram</summary>
 	/// <param name="pathname">Path to the file to upload</param>
 	/// <param name="progress">(optional) Callback for tracking the progression of the transfer</param>
@@ -159,15 +161,26 @@ public static class TelegramClientExtensions
 				var duration = inputFile.Metadata.Duration.TotalSeconds;
 				var size = inputFile.Metadata.VideoData.FrameSize?.Split('x');
 				var inputFileClient = await client.UploadFileAsync(filePath);
-				return new InputMediaUploadedDocument
+				var withAudio = inputFile.Metadata.AudioData != null;
+				var isSmallFile = fileInfo.Length < TenMegaBytes;
+				var isGif = isSmallFile && !withAudio;
+				var inputMedia = new InputMediaUploadedDocument
 				{
-					file = inputFileClient, mime_type = "video/mp4",
-					attributes = new[]
-					{
-						new DocumentAttributeVideo
-							{duration = (int)duration, w = int.Parse(size[0]), h = int.Parse(size[1]), flags = DocumentAttributeVideo.Flags.supports_streaming}
-					}
+					file = inputFileClient, 
+					mime_type = isGif? "image/gif": "video/mp4",
+					attributes = isGif? new[] {new DocumentAttributeAnimated()}: 
+						new[] 
+						{
+							new DocumentAttributeVideo
+							{
+								duration = (int)duration,
+								w = int.Parse(size[0]),
+								h = int.Parse(size[1]),
+								flags = DocumentAttributeVideo.Flags.supports_streaming
+							}
+						}
 				};
+				return inputMedia;
 			}
 		}
 	}
