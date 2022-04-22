@@ -59,6 +59,6 @@ public class ClientStartup
 	private void ClearCache()
 	{
 		if (Directory.Exists("tmp"))
-			Directory.Delete("tmp");
+			Directory.Delete("tmp", true);
 	}
 }
