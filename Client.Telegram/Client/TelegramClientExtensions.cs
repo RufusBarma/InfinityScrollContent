@@ -118,6 +118,7 @@ public static class TelegramClientExtensions
 		async Task<InputMedia> UploadFromUrl(string url)
 		{
 			var httpClient = new HttpClient();
+			httpClient.Timeout = new TimeSpan(0, 30, 0);
 			var filename = Path.GetFileName(new Uri(url).LocalPath);
 			var response = await httpClient.GetAsync(url);
 			using var stream = await response.Content.ReadAsStreamAsync();
@@ -148,7 +149,7 @@ public static class TelegramClientExtensions
 				using (var engine = new Engine())
 				{
 					engine.GetMetadata(mediaFile);
-					engine.GetThumbnail(mediaFile, thumbNailFile, new ConversionOptions(){});
+					engine.GetThumbnail(mediaFile, thumbNailFile, new ConversionOptions {Seek = mediaFile.Metadata.Duration.Divide(3)});
 				}
 
 				var thumbNailResized = await Resize(thumbNailFile.Filename);
