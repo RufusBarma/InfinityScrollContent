@@ -1,4 +1,6 @@
 using MediaToolkit;
+using MediaToolkit.Model;
+using MediaToolkit.Options;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Processing;
@@ -41,7 +43,7 @@ public static class TelegramClientExtensions
 			stream.Position = 0;
 			return stream;
 		}
-		
+
 		image.Mutate(x => x.Resize(new ResizeOptions {Mode = ResizeMode.Max, Size = new Size(1280, 1280)}));
 		var output = new MemoryStream();
 		await image.SaveAsync(output, imf.Format); 
@@ -135,19 +137,26 @@ public static class TelegramClientExtensions
 					else
 						await stream.CopyToAsync(fileStream);
 				}
-				var inputFile = new MediaToolkit.Model.MediaFile { Filename = filePath };
+				var mediaFile = new MediaFile { Filename = filePath };
+				var thumbNailFile = new MediaFile(Path.ChangeExtension(filePath, "jpg"));
 				using (var engine = new Engine())
 				{
-					engine.GetMetadata(inputFile);
+					engine.GetMetadata(mediaFile);
+					engine.GetThumbnail(mediaFile, thumbNailFile, new ConversionOptions(){});
 				}
-				var duration = inputFile.Metadata.Duration.TotalSeconds;
-				var size = inputFile.Metadata.VideoData.FrameSize?.Split('x');
+
+				var thumbNailResized = await Resize(thumbNailFile.Filename);
+				var thumbNailUploaded = await client.UploadFileAsync(thumbNailResized, thumbNailFile.Filename);
+
+				var duration = mediaFile.Metadata.Duration.TotalSeconds;
+				var size = mediaFile.Metadata.VideoData.FrameSize?.Split('x');
 				var inputFileClient = await client.UploadFileAsync(filePath);
-				var withAudio = inputFile.Metadata.AudioData != null;
+				var withAudio = mediaFile.Metadata.AudioData != null;
 				var isSmallFile = fileInfo.Length < TenMegaBytes;
 				var isGif = isSmallFile && !withAudio;
 				var inputMedia = new InputMediaUploadedDocument
 				{
+					thumb = thumbNailUploaded,
 					file = inputFileClient, 
 					mime_type = isGif? "image/gif": "video/mp4",
 					attributes = isGif? new[] {new DocumentAttributeAnimated()}: 
