@@ -50,7 +50,8 @@ public class ClientStartup
 			foreach (var mediaGroup in mediaGroups)
 			foreach (var urlChunk in mediaGroup.Chunk(10))
 			{
-				await _client.SafeSendAlbumAsync(channel, urlChunk);
+				var tags = string.Join(", ", document.Category.Select(category => '#' + category.Replace(' ', '_')));
+				await _client.SafeSendAlbumAsync(channel, urlChunk, tags);
 				await Task.Delay(1000);
 			}
 		}

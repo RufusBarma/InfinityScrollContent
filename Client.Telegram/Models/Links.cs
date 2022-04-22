@@ -21,4 +21,5 @@ public record Link
 	public bool IsGallery { get; set; }
 	public string ErrorMessage { get; set; }
 	public int UpVotes { get; init; }
+	public string[] Category { get; init; }
 }
