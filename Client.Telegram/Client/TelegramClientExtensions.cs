@@ -51,7 +51,7 @@ public static class TelegramClientExtensions
 		return output;
 	}
 
-	public static async Task<Message> SafeSendAlbumAsync(this WTelegram.Client client, InputPeer peer, InputMedia[] medias, string caption = null, int reply_to_msg_id = 0, MessageEntity[] entities = null, DateTime schedule_date = default)
+	public static async Task<List<Message>> SafeSendAlbumAsync(this WTelegram.Client client, InputPeer peer, InputMedia[] medias, string caption = null, int reply_to_msg_id = 0, MessageEntity[] entities = null, DateTime schedule_date = default)
 	{
 		var convertedMedias = new InputMedia[medias.Length];
 		for (var i = 0; i < medias.Length; i++)
@@ -64,7 +64,24 @@ public static class TelegramClientExtensions
 				_ => ism
 			};
 		}
-		return await client.SendAlbumAsync(peer, convertedMedias, caption, reply_to_msg_id, entities, schedule_date);
+
+		var mediaToSendAsMessage = convertedMedias
+			.Where(media =>
+			{
+				var uploaded = (media as InputMediaUploadedDocument);
+				var isGif = uploaded != null && 
+				            (uploaded.attributes != null && uploaded.attributes.Any(attribute => attribute.GetType() == typeof(DocumentAttributeAnimated)) || 
+				             uploaded.file != null && uploaded.file.Name.EndsWith("gif"));
+				return media.GetType() == typeof(InputMediaDocumentExternal) || isGif;
+			})
+			.ToList();
+		var messages = new List<Message>();
+		foreach (var media in mediaToSendAsMessage)
+			messages.Add(await client.SendMessageAsync(peer, caption, media));
+		var album = convertedMedias.Except(mediaToSendAsMessage).ToArray();
+		if (album.Any())
+			messages.Add(await client.SendAlbumAsync(peer, album, caption, reply_to_msg_id, entities, schedule_date));
+		return messages;
 	}
 
 	private static async Task<InputMedia> GetPhoto(InputMediaPhotoExternal impe, WTelegram.Client client)
@@ -98,7 +115,7 @@ public static class TelegramClientExtensions
 		var inputFile = await UploadFromUrl(document.url);
 		return inputFile;
 
-		async Task<InputMediaUploadedDocument> UploadFromUrl(string url)
+		async Task<InputMedia> UploadFromUrl(string url)
 		{
 			var httpClient = new HttpClient();
 			var filename = Path.GetFileName(new Uri(url).LocalPath);
@@ -107,18 +124,7 @@ public static class TelegramClientExtensions
 			var mimeType = response.Content.Headers.ContentType?.MediaType;
 			if (mimeType != "video/mp4")
 			{
-				if (response.Content.Headers.ContentLength is long length)
-				{
-					var indirect = new Helpers.IndirectStream(stream) {ContentLength = length};
-					return new InputMediaUploadedDocument {file = await client.UploadFileAsync(indirect, filename)};
-				}
-				else
-				{
-					await using var ms = new MemoryStream();
-					await stream.CopyToAsync(ms);
-					ms.Position = 0;
-					return new InputMediaUploadedDocument {file = await client.UploadFileAsync(ms, filename)};
-				}
+				return document;
 			}
 			else
 			{

@@ -52,7 +52,7 @@ public class ClientStartup
 			{
 				var tags = string.Join(' ', document.Category.Select(category => '#' + category.Replace(' ', '_')));
 				await _client.SafeSendAlbumAsync(channel, urlChunk, tags);
-				await Task.Delay(1000);
+				await Task.Delay(1000); //TODO realize messages counting
 			}
 		}
 	}
