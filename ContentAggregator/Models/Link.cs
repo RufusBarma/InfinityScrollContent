@@ -3,7 +3,7 @@ namespace ContentAggregator.Models;
 public abstract record Link
 {
     public string SourceUrl { get; init; }
-    public string Category { get; init; }
+    public string[] Category { get; init; }
 }
 
 public record RedditLink: Link

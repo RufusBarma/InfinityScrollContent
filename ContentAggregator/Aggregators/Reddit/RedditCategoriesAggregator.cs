@@ -77,12 +77,19 @@ public class RedditCategoriesAggregator
 	private List<CategoryItem> GetCategories(List<HtmlNode> nodes)
 	{
 		var categories = new List<CategoryItem>();
-		var group = "other";
+		var previousNodes = new Stack<(HtmlNode Node, string Category)>();
 		foreach (var node in nodes)
 			if (IsHeader(node))
-				group = node.InnerText;
+			{
+				while (previousNodes.Count != 0 && CompareHeader(node, previousNodes.Peek().Node) <= 0)
+					previousNodes.Pop();
+				previousNodes.Push((node, node.InnerText));
+			}
 			else if (node.Name == "table")
-				categories.AddRange(GetCategoryItems(node, group));
+			{
+				var previousCategory = previousNodes.Select(previous => previous.Category).Reverse().ToArray();
+				categories.AddRange(GetCategoryItems(node, previousCategory));
+			}
 
 		return categories;
 	}
@@ -97,9 +104,9 @@ public class RedditCategoriesAggregator
 			.ToList();
 	}
 
-	private IEnumerable<CategoryItem> GetCategoryItems(HtmlNode table, string group) => GetCategoryItems(ParseTable(table), group);
+	private IEnumerable<CategoryItem> GetCategoryItems(HtmlNode table, string[] group) => GetCategoryItems(ParseTable(table), group);
 
-	private IEnumerable<CategoryItem> GetCategoryItems(List<List<string>> table, string group) =>
+	private IEnumerable<CategoryItem> GetCategoryItems(List<List<string>> table, string[] group) =>
 		table.Select(row => new CategoryItem
 		{
 			Title = row.First(),

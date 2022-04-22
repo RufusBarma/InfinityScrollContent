@@ -9,7 +9,7 @@ namespace ContentAggregator.Aggregators.Reddit;
 
 public static class RedditExtensions
 {
-	public static IEnumerable<RedditLink> GetLinks(this IEnumerable<Post> posts, string group) => posts
+	public static IEnumerable<RedditLink> GetLinks(this IEnumerable<Post> posts, string[] groups) => posts
 			.Where(post => post is LinkPost)
 			.Cast<LinkPost>()
 			.Select(post => new RedditLink
@@ -18,7 +18,7 @@ public static class RedditExtensions
 				SourceUrl = post.URL,
 				UpVotes = post.UpVotes,
 				UpvoteRatio = post.UpvoteRatio,
-				Category = group,
+				Category = groups,
 				FullName = post.Fullname
 			});
 

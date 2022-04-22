@@ -9,7 +9,6 @@ public enum LinkType
 	Video,
 	Img,
 	Gif,
-	Album
 }
 
 [BsonIgnoreExtraElements]
