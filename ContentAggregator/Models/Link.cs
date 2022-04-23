@@ -2,6 +2,7 @@ namespace ContentAggregator.Models;
 
 public abstract record Link
 {
+	public string PermaLink { get; init; }
     public string SourceUrl { get; init; }
     public string[] Category { get; init; }
 }

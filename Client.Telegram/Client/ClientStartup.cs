@@ -50,8 +50,9 @@ public class ClientStartup
 			foreach (var mediaGroup in mediaGroups)
 			foreach (var urlChunk in mediaGroup.Chunk(10))
 			{
+				var sourceLink = string.IsNullOrEmpty(document.PermaLink)? "": $" [Source]({document.PermaLink})";
 				var tags = string.Join(' ', document.Category.Select(category => '#' + category.Replace(' ', '_')));
-				await _client.SafeSendAlbumAsync(channel, urlChunk, tags);
+				await _client.SafeSendAlbumAsync(channel, urlChunk, (tags + sourceLink).Trim());
 				await Task.Delay(1000); //TODO realize messages counting
 			}
 		}
