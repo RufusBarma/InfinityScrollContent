@@ -14,7 +14,7 @@ public static class RedditExtensions
 			.Cast<LinkPost>()
 			.Select(post => new RedditLink
 			{
-				PermaLink = post.Permalink,
+				PermaLink = "https://www.reddit.com" + post.Permalink,
 				Subreddit = post.Subreddit,
 				SourceUrl = post.URL,
 				UpVotes = post.UpVotes,
