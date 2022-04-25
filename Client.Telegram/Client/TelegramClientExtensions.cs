@@ -77,7 +77,7 @@ public static class TelegramClientExtensions
 			.ToList();
 		var messages = new List<Message>();
 		foreach (var media in mediaToSendAsMessage)
-			messages.Add(await client.SendMessageAsync(peer, caption, media));
+			messages.Add(await client.SendMessageAsync(peer, caption, media, reply_to_msg_id, entities, schedule_date));
 		var album = convertedMedias.Except(mediaToSendAsMessage).ToArray();
 		if (album.Any())
 			messages.Add(await client.SendAlbumAsync(peer, album, caption, reply_to_msg_id, entities, schedule_date));
