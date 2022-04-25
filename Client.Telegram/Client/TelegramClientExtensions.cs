@@ -164,6 +164,7 @@ public static class TelegramClientExtensions
 				var inputMedia = new InputMediaUploadedDocument
 				{
 					thumb = thumbNailUploaded,
+					flags = InputMediaUploadedDocument.Flags.has_thumb,
 					file = inputFileClient, 
 					mime_type = isGif? "image/gif": "video/mp4",
 					attributes = isGif? new[] {new DocumentAttributeAnimated()}: 

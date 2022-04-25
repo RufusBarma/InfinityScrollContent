@@ -53,7 +53,7 @@ public class ClientStartup
 				var sourceLink = string.IsNullOrEmpty(document.PermaLink)? "": $"[Source]({document.PermaLink})";
 				var tags = string.Join(' ', document.Category.Select(category => '#' + 
 					category.Replace(' ', '_').Replace('-', '_')));
-				var caption = (Markdown.Escape(tags) + "\n" + sourceLink).Trim();
+				var caption = ("*Categories:* " + Markdown.Escape(tags) + "\n\n" + "*" + sourceLink + "*").Trim();
 				var entities = _client.MarkdownToEntities(ref caption);
 				await _client.SafeSendAlbumAsync(channel, urlChunk, caption, entities: entities);
 				await Task.Delay(1000); //TODO realize messages counting
