@@ -19,7 +19,7 @@ public static class RedditExtensions
 				SourceUrl = post.URL,
 				UpVotes = post.UpVotes,
 				UpvoteRatio = post.UpvoteRatio,
-				Category = groups.Append(post.Subreddit).ToArray(),
+				Category = groups.Append(post.Subreddit).Distinct(StringComparer.CurrentCultureIgnoreCase).ToArray(),
 				FullName = post.Fullname
 			});
 
