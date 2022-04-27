@@ -179,8 +179,15 @@ public static class TelegramClientExtensions
 							}
 						}
 				};
+				ClearCache();
 				return inputMedia;
 			}
 		}
+	}
+
+	private static void ClearCache()
+	{
+		if (Directory.Exists("tmp"))
+			Directory.Delete("tmp", true);
 	}
 }

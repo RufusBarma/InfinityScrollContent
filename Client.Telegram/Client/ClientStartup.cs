@@ -30,9 +30,13 @@ public class ClientStartup
 		_postedCollection = senderDb.GetCollection<PostedLink>("PostedLinks");
 	}
 
-	public async Task Start(CancellationToken cancellationToken)
+	public Task Start(CancellationToken cancellationToken)
 	{
-		ClearCache();
+		return StartSending(cancellationToken);
+	}
+
+	public async Task StartSending(CancellationToken cancellationToken)
+	{
 		var chats = await _client.Messages_GetAllChats();
 		var channel = chats.chats[0000000000] as Channel;
 		Func<Link, bool> filter = link =>
@@ -51,7 +55,7 @@ public class ClientStartup
 			.Where(filter);
 		var count = documents.Count();
 		var rnd = new Random();
-		var limit = 5;
+		var limit = 2;
 		while (!cancellationToken.IsCancellationRequested && limit-- > 0 && count > 0)
 		{
 			var document = documents.Skip(rnd.Next(count)).First();
@@ -84,11 +88,5 @@ public class ClientStartup
 			};
 			await _postedCollection.InsertOneAsync(postedLink);
 		}
-	}
-
-	private void ClearCache()
-	{
-		if (Directory.Exists("tmp"))
-			Directory.Delete("tmp", true);
 	}
 }
