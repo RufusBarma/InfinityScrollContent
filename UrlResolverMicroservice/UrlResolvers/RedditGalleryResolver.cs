@@ -21,7 +21,7 @@ public class RedditGalleryResolver: IUrlResolver
 		var urlJson = $"{url.Replace("gallery", "comments")}.json";
 		var client = new RestClient(urlJson);
 		var response = await client.ExecuteGetTaskAsync(new RestRequest());
-		
+
 		if (int.Parse((string) response.Headers.FirstOrDefault(header => header.Name == "x-ratelimit-remaining")?.Value ?? "0") <= 1)
 		{
 			int.TryParse((string) response.Headers.FirstOrDefault(header => header.Name == "x-ratelimit-reset")?.Value, out var reset);

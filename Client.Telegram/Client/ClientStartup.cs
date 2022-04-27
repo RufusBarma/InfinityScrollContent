@@ -34,7 +34,7 @@ public class ClientStartup
 	{
 		ClearCache();
 		var chats = await _client.Messages_GetAllChats();
-		var channel = chats.chats[0000000000];
+		var channel = chats.chats[0000000000] as Channel;
 		Func<Link, bool> filter = link =>
 		{
 			var filter = Builders<PostedLink>.Filter.Eq(field => field.SourceUrl, link.SourceUrl);
@@ -78,6 +78,7 @@ public class ClientStartup
 			var postedLink = new PostedLink
 			{
 				ChannelId = channel.ID,
+				ChannelUserName = channel.username,
 				PostDate = DateTime.UtcNow,
 				SourceUrl = document.SourceUrl,
 			};
