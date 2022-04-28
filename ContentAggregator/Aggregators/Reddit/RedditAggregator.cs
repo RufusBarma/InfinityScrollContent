@@ -5,7 +5,6 @@ using LanguageExt.UnsafeValueAccess;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
-using MoreLinq;
 using Reddit;
 using Reddit.Controllers;
 
@@ -42,7 +41,7 @@ public class RedditAggregator: IAggregator
 
 	private async Task RunAggregator(List<CategoryItem> categories, CancellationToken cancellationToken)
 	{
-		var categoryItems = _categories;//.Shuffle().Take(5);
+		var categoryItems = categories;//.Shuffle().Take(5);
 		foreach (var linksTask in categoryItems
 			         .Select(category => (category, Subreddit: _reddit.GetSubreddit(category.Title, _logger)))
 			         .Where(tuple => tuple.Subreddit.IsSome)

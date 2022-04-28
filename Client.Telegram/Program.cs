@@ -10,6 +10,15 @@ var configurationRoot = new ConfigurationBuilder()
 	.Build();
 
 var serviceProvider = new ServiceCollection()
+	.AddSingleton(_ =>
+	{
+		return new WTelegram.Client(what =>
+		{
+			if (what != "verification_code") return configurationRoot.GetValue<string>(what);
+			Console.Write("Code: ");
+			return Console.ReadLine();
+		});
+	})
 	.AddSingleton<IConfiguration>(configurationRoot)
 	.AddSingleton<ClientStartup>()
 	.AddLogging(configure => configure.AddConsole())
