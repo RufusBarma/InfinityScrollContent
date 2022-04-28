@@ -28,7 +28,10 @@ public class MainResolver : IMainResolver
 
 	public async Task Start(CancellationToken cancellationToken)
 	{
-		var filter = Builders<Link>.Filter.In("Urls", new[] { null, Array.Empty<string>() });
+		var filter = Builders<Link>.Filter.And(Builders<Link>.Filter.In("Urls", new[] { null, Array.Empty<string>() }),
+			Builders<Link>.Filter.Or(
+				Builders<Link>.Filter.Eq(link => link.ErrorMessage, string.Empty),
+				Builders<Link>.Filter.Exists(link => link.ErrorMessage, false)));
 		var emptyUrls = _linkCollection.Find(filter).ToEnumerable();
 		//TODO parallelize resolve over each resolver
 		foreach (var link in emptyUrls)
