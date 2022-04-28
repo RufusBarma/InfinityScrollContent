@@ -30,6 +30,7 @@ public class MainResolver : IMainResolver
 	{
 		var filter = Builders<Link>.Filter.In("Urls", new[] { null, Array.Empty<string>() });
 		var emptyUrls = _linkCollection.Find(filter).ToEnumerable();
+		//TODO parallelize resolve over each resolver
 		foreach (var link in emptyUrls)
 		{
 			if (cancellationToken.IsCancellationRequested)
@@ -48,8 +49,11 @@ public class MainResolver : IMainResolver
 					return Builders<Link>.Update.Set(updLink => updLink.ErrorMessage, error);
 				});
 			if (skipFlag)
+			{
+				_logger.LogInformation("Skip {link.SourceUrl}", link.SourceUrl);
 				continue;
-
+			}
+			_logger.LogInformation("Resolved {link.SourceUrl}", link.SourceUrl);
 			var updateFilter = Builders<Link>.Filter.Eq("_id", link._id);
 			await _linkCollection.UpdateOneAsync(updateFilter, update, new UpdateOptions(){IsUpsert = true});
 		}
