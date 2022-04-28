@@ -37,6 +37,7 @@ public class ClientStartup
 
 	public async Task StartSending(CancellationToken cancellationToken)
 	{
+		//TODO cache access_hash
 		var chats = await _client.Messages_GetAllChats();
 		var channel = chats.chats[0000000000] as Channel;
 		Func<Link, bool> filter = link =>
@@ -51,14 +52,12 @@ public class ClientStartup
 			Builders<Link>.Filter.Eq(link => link.ErrorMessage, String.Empty),
 				Builders<Link>.Filter.Exists(link => link.ErrorMessage, false)));
 
-		var documents = _linkCollection.Find(preFilter).SortByDescending(field => field.UpVotes).ToEnumerable()
-			.Where(filter);
-		var count = documents.Count();
-		var rnd = new Random();
 		var limit = 2;
-		while (!cancellationToken.IsCancellationRequested && limit-- > 0 && count > 0)
+		var documents = _linkCollection.Find(preFilter).SortByDescending(field => field.UpVotes).ToEnumerable()
+			.Where(filter).Take(limit).ToList();
+		while (!cancellationToken.IsCancellationRequested && limit-- > 0 && documents.Count > 0)
 		{
-			var document = documents.Skip(rnd.Next(count)).First();
+			var document = documents.First();
 			var photoExts = new[] {"png", "jpeg", "jpg"};
 			var mediaGroups = document.Urls.Select(url => (InputMedia)
 					(photoExts.Any(ext => ext == Path.GetExtension(url).Remove(0, 1).ToLower())
@@ -76,7 +75,8 @@ public class ClientStartup
 				var caption = ("*Categories:* " + Markdown.Escape(tags) + "\n\n" + "*" + sourceLink + "*").Trim();
 				var entities = _client.MarkdownToEntities(ref caption);
 				await _client.SafeSendAlbumAsync(channel, urlChunk, caption, entities: entities);
-				await Task.Delay(1000); //TODO realize messages counting
+				documents.Remove(document);
+				await Task.Delay(20000); //TODO realize messages counting
 			}
 
 			var postedLink = new PostedLink
