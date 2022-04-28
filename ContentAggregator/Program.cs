@@ -1,5 +1,7 @@
 ﻿using ContentAggregator.Aggregators;
 using ContentAggregator.Aggregators.Reddit;
+using ContentAggregator.CategoriesAggregators;
+using ContentAggregator.CategoriesAggregators.Reddit;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -12,7 +14,9 @@ var configurationRoot = new ConfigurationBuilder()
 var serviceProvider = new ServiceCollection()
 	.AddTransient<IAggregator, RedditAggregator>()
 	.AddSingleton<AggregatorComposer>()
-	.AddSingleton<RedditCategoriesAggregator>()
+	.AddTransient<RedditHtmlCategoriesAggregator>()
+	.AddTransient<RedditCsvCategoriesEnricher>()
+	.AddSingleton<ICategoriesAggregator, RedditCategoriesAggregator>()
 	.AddSingleton<IConfiguration>(configurationRoot)
 	.AddLogging(configure => configure.AddConsole())
 	.BuildServiceProvider();

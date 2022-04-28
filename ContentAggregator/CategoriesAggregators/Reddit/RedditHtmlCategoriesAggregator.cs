@@ -1,39 +1,22 @@
-﻿using System.Net;
-using ContentAggregator.Models;
+﻿using ContentAggregator.Models;
 using HtmlAgilityPack;
 using Microsoft.Extensions.Configuration;
-using MongoDB.Driver;
 
-namespace ContentAggregator.Aggregators.Reddit;
+namespace ContentAggregator.CategoriesAggregators.Reddit;
 
-public class RedditCategoriesAggregator
+public class RedditHtmlCategoriesAggregator
 {
 	private readonly List<string> _headers = Enumerable.Range(1, 6).Select(level => "h" + level).ToList();
-	private readonly string _cachePath;
 	private readonly string _categoriesAddress;
-	private readonly string _categoriesPagePath;
-	private MongoClient _clientDb;
 
-	public RedditCategoriesAggregator(IConfiguration config)
+	public RedditHtmlCategoriesAggregator(IConfiguration config)
 	{
-		_cachePath = config["Cache:CategoriesPath"];
 		_categoriesAddress = config["Reddit:CategoriesAddress"];
-		_categoriesPagePath = config["Cache:RootPath"] + "pageCache.txt";
-		_clientDb = new MongoClient(config.GetConnectionString("DefaultConnection"));
 	}
 
-	public List<CategoryItem> GetCategories()
+	public async Task<IEnumerable<CategoryItem>> GetCategories()
 	{
-		var database = _clientDb.GetDatabase("Reddit");
-		var collection = database.GetCollection<CategoryItem>("Categories");
-		var documentsCount = collection.CountDocuments(doc => true);
-		var categories = collection.Aggregate().ToList();
-		if (documentsCount == 0)
-		{
-			categories = ParseCategories(_categoriesAddress);
-			collection.InsertMany(categories);
-		}
-		return categories;
+		return await ParseCategories(_categoriesAddress);;
 	}
 
 	private bool IsHeader(HtmlNode node) => _headers.Contains(node.Name);
@@ -45,20 +28,9 @@ public class RedditCategoriesAggregator
 		return leftDeep.CompareTo(rightDeep);
 	}
 
-	private List<CategoryItem> ParseCategories(string address)
+	private async Task<IEnumerable<CategoryItem>> ParseCategories(string address)
 	{
-		string page;
-		if (!File.Exists(_categoriesPagePath))
-		{
-			var webClient = new WebClient();
-			page = webClient.DownloadString(address);
-			new FileInfo(_cachePath).Directory?.Create();
-			File.WriteAllText(_categoriesPagePath, page);
-		}
-		else
-		{
-			page = File.ReadAllText(_categoriesPagePath);
-		}
+		var page = await new HttpClient().GetStringAsync(address);
 
 		var doc = new HtmlDocument();
 		doc.LoadHtml(page);
@@ -74,7 +46,7 @@ public class RedditCategoriesAggregator
 		return GetCategories(nodes);
 	}
 
-	private List<CategoryItem> GetCategories(List<HtmlNode> nodes)
+	private IEnumerable<CategoryItem> GetCategories(List<HtmlNode> nodes)
 	{
 		var categories = new List<CategoryItem>();
 		var previousNodes = new Stack<(HtmlNode Node, string Category)>();

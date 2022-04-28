@@ -1,4 +1,5 @@
-﻿using ContentAggregator.Models;
+﻿using ContentAggregator.CategoriesAggregators;
+using ContentAggregator.Models;
 using LanguageExt;
 using LanguageExt.UnsafeValueAccess;
 using Microsoft.Extensions.Configuration;
@@ -13,13 +14,13 @@ namespace ContentAggregator.Aggregators.Reddit;
 public class RedditAggregator: IAggregator
 {
 	private readonly RedditClient _reddit;
-	private List<CategoryItem> _categories;
+	private ICategoriesAggregator _categoriesAggregator;
 	private IMongoCollection<RedditLink> _linkCollection;
 	private IMongoCollection<CategoryPosition> _positions;
 	private ILogger _logger;
 	private Task _aggregatorTask;
 
-	public RedditAggregator(IConfiguration config, RedditCategoriesAggregator categoriesAggregator, ILogger<RedditAggregator> logger)
+	public RedditAggregator(IConfiguration config, ICategoriesAggregator categoriesAggregator, ILogger<RedditAggregator> logger)
 	{
 		_logger = logger;
 		var appId = config.GetRequiredSection("app_id_reddit").Value;
@@ -30,16 +31,16 @@ public class RedditAggregator: IAggregator
 		var redditDb = new MongoClient(config.GetConnectionString("DefaultConnection")).GetDatabase("Reddit");
 		_linkCollection = redditDb.GetCollection<RedditLink>("Links");
 		_positions = redditDb.GetCollection<CategoryPosition>("CategoryPositions");
-		_categories = categoriesAggregator.GetCategories();
+		_categoriesAggregator = categoriesAggregator;
 	}
 
-	public Task Start(CancellationToken cancellationToken)
+	public async Task Start(CancellationToken cancellationToken)
 	{
-		_aggregatorTask = RunAggregator(cancellationToken);
-		return _aggregatorTask;
+		var categories = (await _categoriesAggregator.GetCategories()).ToList();
+		await RunAggregator(categories, cancellationToken);
 	}
 
-	private async Task RunAggregator(CancellationToken cancellationToken)
+	private async Task RunAggregator(List<CategoryItem> categories, CancellationToken cancellationToken)
 	{
 		var categoryItems = _categories;//.Shuffle().Take(5);
 		foreach (var linksTask in categoryItems
