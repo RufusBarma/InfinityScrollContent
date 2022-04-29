@@ -27,7 +27,7 @@ public class SendJob: IJob
 	{
 		await _client.LoginUserIfNeeded();
 		var chats = await _client.Messages_GetAllChats();
-		var channel = chats.chats[0000000000] as Channel;
+		var channel = chats.chats.FirstOrDefault(chat => chat.Value is Channel {username: "test_channel"}).Value as Channel;
 		Func<Link, bool> filter = link =>
 		{
 			var filter = Builders<PostedLink>.Filter.Eq(field => field.SourceUrl, link.SourceUrl);

@@ -57,10 +57,12 @@ public class ImgurResolver: IUrlResolver
 			Timeout = -1
 		};
 		var response = await client.ExecuteGetTaskAsync(_request);
-		if (int.Parse((string) response.Headers.FirstOrDefault(header => header.Name == "X-RateLimit-UserRemaining")?.Value ?? "0") <= 1)
+		if (int.Parse((string) response.Headers.FirstOrDefault(header => header.Name == "X-RateLimit-UserRemaining")?.Value ?? "6") <= 5)
 		{
+			var userReset = response.Headers.FirstOrDefault(header => header.Name == "X-RateLimit-UserReset")?.Value as string;
+			var userResetSeconds = string.IsNullOrEmpty(userReset)? new TimeSpan(1, 0, 0, 0).TotalSeconds: double.Parse(userReset);
 			var options = new DistributedCacheEntryOptions()
-				.SetAbsoluteExpiration(new TimeSpan(1, 0, 0, 0));
+				.SetAbsoluteExpiration(TimeSpan.FromSeconds(userResetSeconds));
 			await _distributedCache.SetAsync("Imgur.LimitRich", true, options);
 		}
 		if (response.StatusCode is not HttpStatusCode.OK)
