@@ -129,6 +129,7 @@ public static class TelegramClientExtensions
 			}
 			else
 			{
+				ClearCache();
 				if (!Directory.Exists("tmp"))
 					Directory.CreateDirectory("tmp");
 				var filePath = Path.Combine("tmp", filename);
@@ -179,7 +180,6 @@ public static class TelegramClientExtensions
 							}
 						}
 				};
-				ClearCache();
 				return inputMedia;
 			}
 		}
