@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
+using Quartz;
 
 var configurationRoot = new ConfigurationBuilder()
 	.AddEnvironmentVariables()
@@ -10,7 +11,7 @@ var configurationRoot = new ConfigurationBuilder()
 	.Build();
 
 var serviceProvider = new ServiceCollection()
-	.AddSingleton(_ =>
+	.AddTransient(_ =>
 	{
 		return new WTelegram.Client(what =>
 		{
@@ -20,25 +21,46 @@ var serviceProvider = new ServiceCollection()
 		});
 	})
 	.AddSingleton<IConfiguration>(configurationRoot)
-	.AddSingleton<ClientStartup>()
 	.AddLogging(configure => configure.AddConsole())
+	.AddTransient<SendJob>()
 	.AddSingleton<IMongoClient, MongoClient>(sp =>
 		new MongoClient(configurationRoot.GetConnectionString("DefaultConnection")))
+	.AddQuartz(q =>
+		{
+			// handy when part of cluster or you want to otherwise identify multiple schedulers
+			q.SchedulerId = "Scheduler-Core";
+			// we take this from appsettings.json, just show it's possible
+			q.SchedulerName = "Quartz ASP.NET Core Sample Scheduler";
+
+			q.UseMicrosoftDependencyInjectionJobFactory();
+
+			// these are the defaults
+			q.UseSimpleTypeLoader();
+			q.UseInMemoryStore();
+			q.UseDefaultThreadPool(tp => { tp.MaxConcurrency = 10; });
+
+			q.ScheduleJob<SendJob>(trigger => trigger
+				.WithIdentity("Combined Configuration Trigger")
+				.StartAt(DateTimeOffset.Now)
+				.WithCronSchedule("0 0 */1 * * ?")
+				.WithDescription("my awesome trigger configured for a job with single call")
+			);
+		})
+	.AddQuartzHostedService(q => q.WaitForJobsToComplete = true)
 	.BuildServiceProvider();
 
-var startup = serviceProvider.GetRequiredService<ClientStartup>();
 var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
-
+var scheduler = await serviceProvider.GetRequiredService<ISchedulerFactory>().GetScheduler();
 var cancellationTokenSource = new CancellationTokenSource();
-var currentTask = startup.Start(cancellationTokenSource.Token);
+await scheduler.Start(cancellationTokenSource.Token);
 
 AppDomain.CurrentDomain.ProcessExit += async (_, _) =>
 {
 	logger.LogInformation("Received SIGTERM");
 	cancellationTokenSource.Cancel();
-	await currentTask.WaitAsync(CancellationToken.None);
+	await scheduler.Shutdown(true);
 	logger.LogInformation("Safety shutdown");
 	await serviceProvider.DisposeAsync();
 };
 
-await currentTask;
+await Task.Delay(Timeout.Infinite, cancellationTokenSource.Token);

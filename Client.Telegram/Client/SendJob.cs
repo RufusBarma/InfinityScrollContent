@@ -8,20 +8,21 @@ namespace Client.Telegram.Client;
 
 public class SendJob: IJob
 {
-	private readonly ILogger<ClientStartup> _logger;
+	private readonly ILogger<SendJob> _logger;
 	private WTelegram.Client _client;
 	private readonly IMongoCollection<Link> _linkCollection;
 	private readonly IMongoCollection<PostedLink> _postedCollection;
 
-	public SendJob(IMongoClient dbClient, ILogger<ClientStartup> logger)
+	public SendJob(WTelegram.Client client, IMongoClient dbClient, ILogger<SendJob> logger)
 	{
 		_logger = logger;
 		var redditDb = dbClient.GetDatabase("Reddit");
 		_linkCollection = redditDb.GetCollection<Link>("Links");
 		var senderDb = dbClient.GetDatabase("Sender");
 		_postedCollection = senderDb.GetCollection<PostedLink>("PostedLinks");
+		_client = client;
 	}
-	
+
 	public async Task Execute(IJobExecutionContext context)
 	{
 		await _client.LoginUserIfNeeded();
@@ -39,7 +40,7 @@ public class SendJob: IJob
 			Builders<Link>.Filter.Eq(link => link.ErrorMessage, String.Empty),
 				Builders<Link>.Filter.Exists(link => link.ErrorMessage, false)));
 
-		var limit = 2;
+		var limit = 1;
 		var documents = _linkCollection.Find(preFilter).SortByDescending(field => field.UpVotes).ToEnumerable()
 			.Where(filter).Take(limit).ToList();
 		while (!context.CancellationToken.IsCancellationRequested && limit-- > 0 && documents.Count > 0)
@@ -78,5 +79,6 @@ public class SendJob: IJob
 			};
 			await _postedCollection.InsertOneAsync(postedLink);
 		}
+		_client.Dispose();
 	}
 }
