@@ -6,6 +6,7 @@ using TL;
 
 namespace Client.Telegram.Client;
 
+[DisallowConcurrentExecution]
 public class SendJob: IJob
 {
 	private readonly ILogger<SendJob> _logger;
@@ -43,6 +44,8 @@ public class SendJob: IJob
 		var limit = 1;
 		var documents = _linkCollection.Find(preFilter).SortByDescending(field => field.UpVotes).ToEnumerable()
 			.Where(filter).Take(limit).ToList();
+		if (documents.Count() == 0)
+			_logger.LogWarning("Documents count is 0");
 		while (!context.CancellationToken.IsCancellationRequested && limit-- > 0 && documents.Count > 0)
 		{
 			var document = documents.First();
