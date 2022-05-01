@@ -1,6 +1,8 @@
+using System.Text.Json;
 using Client.Telegram.Models;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
+using MoreLinq;
 using Quartz;
 using TL;
 
@@ -27,18 +29,34 @@ public class SendJob: IJob
 	public async Task Execute(IJobExecutionContext context)
 	{
 		await _client.LoginUserIfNeeded();
-		var chats = await _client.Messages_GetAllChats();
-		var channel = chats.chats.FirstOrDefault(chat => chat.Value is Channel {username: "test_channel"}).Value as Channel;
+
+		//TODO get id and username from db
+		var channelId = 000000000;
+		var channelUserName = "";
+		var channelAccessHash = _client.GetAccessHashFor<Channel>(channelId);
+		if (channelAccessHash == 0)
+		{
+			var durovResolved = await _client.Contacts_ResolveUsername(channelUserName);
+			if (durovResolved.peer.ID != channelId)
+				throw new Exception($"{channelUserName} has changed channel ID ?!");
+			channelAccessHash = _client.GetAccessHashFor<Channel>(channelId);
+			if (channelAccessHash == 0)
+				throw new Exception("No access hash was automatically collected !? (shouldn't happen)");
+			Console.WriteLine($"Channel {channelUserName} has ID {channelId} and access hash was automatically collected: {channelAccessHash:X}");
+		}
+
+		var channel = (await _client.GetFullChat(new InputChannel(channelId, channelAccessHash))).chats.FirstOrDefault().Value as Channel;
+
 		Func<Link, bool> filter = link =>
 		{
 			var filter = Builders<PostedLink>.Filter.Eq(field => field.SourceUrl, link.SourceUrl);
-			return !_postedCollection.Find(filter).Any() && link.UpVotes > 1000;
+			return !_postedCollection.Find(filter).Any();
 		};
 		var preFilter = Builders<Link>.Filter.And(
 			Builders<Link>.Filter.Exists(link => link.Urls),
 			Builders<Link>.Filter.Ne(link => link.Urls, Array.Empty<string>()),
 			Builders<Link>.Filter.Or(
-			Builders<Link>.Filter.Eq(link => link.ErrorMessage, String.Empty),
+			Builders<Link>.Filter.Eq(link => link.ErrorMessage, string.Empty),
 				Builders<Link>.Filter.Exists(link => link.ErrorMessage, false)));
 
 		var limit = 1;
@@ -82,6 +100,14 @@ public class SendJob: IJob
 			};
 			await _postedCollection.InsertOneAsync(postedLink);
 		}
+
+		var savedState = new SavedState
+		{
+			Channels = _client.AllAccessHashesFor<Channel>().ToList(),
+			Users = _client.AllAccessHashesFor<User>().ToList()
+		};
+		await using var stateStream = File.Create("SavedState.json");
+		await JsonSerializer.SerializeAsync(stateStream, savedState);
 		_client.Dispose();
 	}
 }

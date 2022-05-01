@@ -1,9 +1,11 @@
-﻿using Client.Telegram.Client;
+﻿using System.Text.Json;
+using Client.Telegram.Client;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using Quartz;
+using TL;
 
 var configurationRoot = new ConfigurationBuilder()
 	.AddEnvironmentVariables()
@@ -13,12 +15,25 @@ var configurationRoot = new ConfigurationBuilder()
 var serviceProvider = new ServiceCollection()
 	.AddTransient(_ =>
 	{
-		return new WTelegram.Client(what =>
+		var client = new WTelegram.Client(what =>
 		{
 			if (what != "verification_code") return configurationRoot.GetValue<string>(what);
 			Console.Write("Code: ");
 			return Console.ReadLine();
 		});
+		client.CollectAccessHash = true;			
+		
+		if (File.Exists("SavedState.json"))
+		{
+			//TODO save states in db
+			Console.WriteLine("Loading previously saved access hashes from disk...");
+			using var stateStream = File.OpenRead("SavedState.json");
+			var savedState = JsonSerializer.Deserialize<SavedState>(stateStream);
+			foreach (var id_hash in savedState.Channels) client.SetAccessHashFor<Channel>(id_hash.Key, id_hash.Value);
+			foreach (var id_hash in savedState.Users) client.SetAccessHashFor<User>(id_hash.Key, id_hash.Value);
+		}
+
+		return client;
 	})
 	.AddSingleton<IConfiguration>(configurationRoot)
 	.AddLogging(configure => configure.AddConsole())
