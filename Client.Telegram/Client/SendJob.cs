@@ -89,22 +89,28 @@ public class SendJob: IJob
 			return !_postedCollection.Find(filter).Any();
 		};
 
-		var categories = new List<string>{"General Categories"}.Shuffle().Take(1);
-		var exceptCategories = new[] {"ignore"};
-		var preFilter = Builders<Link>.Filter.And(
-			Builders<Link>.Filter.Gt(link => link.UpVotes, 1000),
-			Builders<Link>.Filter.AnyIn(link => link.Category, categories),
-			Builders<Link>.Filter.AnyNin(link => link.Category, exceptCategories),
-			Builders<Link>.Filter.Exists(link => link.Urls),
-			Builders<Link>.Filter.Ne(link => link.Urls, Array.Empty<string>()),
-			Builders<Link>.Filter.Or(
-				Builders<Link>.Filter.Eq(link => link.ErrorMessage, string.Empty),
-				Builders<Link>.Filter.Exists(link => link.ErrorMessage, false)));
+		var categories = new List<string> {"General Categories"}.Shuffle();
+		foreach (var category in categories)
+		{
+			var exceptCategories = new[] {"ignore"};
+			var preFilter = Builders<Link>.Filter.And(
+				// Builders<Link>.Filter.Gt(link => link.UpVotes, 1000),
+				Builders<Link>.Filter.AnyIn(link => link.Category, new List<string>{category}),
+				Builders<Link>.Filter.AnyNin(link => link.Category, exceptCategories),
+				Builders<Link>.Filter.Exists(link => link.Urls),
+				Builders<Link>.Filter.Ne(link => link.Urls, Array.Empty<string>()),
+				Builders<Link>.Filter.Or(
+					Builders<Link>.Filter.Eq(link => link.ErrorMessage, string.Empty),
+					Builders<Link>.Filter.Exists(link => link.ErrorMessage, false)));
 
-		var documents = _linkCollection.Find(preFilter).SortByDescending(field => field.UpVotes).ToEnumerable()
-			.Where(filter).Take(limit).ToList();
-		if (!documents.Any())
-			_logger.LogWarning($"Documents count is 0 for {categories.First()}");
-		return documents;
+			var documents = _linkCollection.Find(preFilter).SortByDescending(field => field.UpVotes).ToEnumerable()
+				.Where(filter).Take(limit).ToList();
+			if (!documents.Any())
+				_logger.LogWarning($"Documents count is 0 for {category}");
+			else
+				return documents;
+		}
+		_logger.LogWarning("All categories is empty");
+		return new List<Link>();
 	}
 }
