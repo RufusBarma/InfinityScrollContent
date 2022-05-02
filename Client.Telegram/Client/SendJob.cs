@@ -52,7 +52,13 @@ public class SendJob: IJob
 			var filter = Builders<PostedLink>.Filter.Eq(field => field.SourceUrl, link.SourceUrl);
 			return !_postedCollection.Find(filter).Any();
 		};
+
+		var categories = new List<string>{"General Categories"}.Shuffle().Take(1);
+		var exceptCategories = new[] {"ignore"};
 		var preFilter = Builders<Link>.Filter.And(
+			Builders<Link>.Filter.Gt(link => link.UpVotes, 1000),
+			Builders<Link>.Filter.AnyIn(link => link.Category, categories),
+			Builders<Link>.Filter.AnyNin(link => link.Category, exceptCategories),
 			Builders<Link>.Filter.Exists(link => link.Urls),
 			Builders<Link>.Filter.Ne(link => link.Urls, Array.Empty<string>()),
 			Builders<Link>.Filter.Or(
@@ -63,7 +69,7 @@ public class SendJob: IJob
 		var documents = _linkCollection.Find(preFilter).SortByDescending(field => field.UpVotes).ToEnumerable()
 			.Where(filter).Take(limit).ToList();
 		if (documents.Count() == 0)
-			_logger.LogWarning("Documents count is 0");
+			_logger.LogWarning($"Documents count is 0 for {categories.First()}");
 		while (!context.CancellationToken.IsCancellationRequested && limit-- > 0 && documents.Count > 0)
 		{
 			var document = documents.First();
