@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Client.Telegram.Models;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
@@ -15,61 +14,32 @@ public class SendJob: IJob
 	private WTelegram.Client _client;
 	private readonly IMongoCollection<Link> _linkCollection;
 	private readonly IMongoCollection<PostedLink> _postedCollection;
+	private readonly IMongoCollection<SavedState> _accessHashCollection;
 
 	public SendJob(WTelegram.Client client, IMongoClient dbClient, ILogger<SendJob> logger)
 	{
 		_logger = logger;
-		var redditDb = dbClient.GetDatabase("Reddit");
+		var redditDb = dbClient.GetDatabase("b7kltbu2j3tfrgn");
 		_linkCollection = redditDb.GetCollection<Link>("Links");
-		var senderDb = dbClient.GetDatabase("Sender");
+		var senderDb = dbClient.GetDatabase("b7kltbu2j3tfrgn");
 		_postedCollection = senderDb.GetCollection<PostedLink>("PostedLinks");
+		var accessHashDb = dbClient.GetDatabase("b7kltbu2j3tfrgn");
+		_accessHashCollection = senderDb.GetCollection<SavedState>("AccessHash");
 		_client = client;
 	}
 
 	public async Task Execute(IJobExecutionContext context)
 	{
-		await _client.LoginUserIfNeeded();
-
+		var me = await _client.LoginUserIfNeeded();
+		await _client.LoadAccessHash(me, _accessHashCollection);
 		//TODO get id and username from db
 		var channelId = 000000000;
 		var channelUserName = "";
-		var channelAccessHash = _client.GetAccessHashFor<Channel>(channelId);
-		if (channelAccessHash == 0)
-		{
-			var durovResolved = await _client.Contacts_ResolveUsername(channelUserName);
-			if (durovResolved.peer.ID != channelId)
-				throw new Exception($"{channelUserName} has changed channel ID ?!");
-			channelAccessHash = _client.GetAccessHashFor<Channel>(channelId);
-			if (channelAccessHash == 0)
-				throw new Exception("No access hash was automatically collected !? (shouldn't happen)");
-			Console.WriteLine($"Channel {channelUserName} has ID {channelId} and access hash was automatically collected: {channelAccessHash:X}");
-		}
 
-		var channel = (await _client.GetFullChat(new InputChannel(channelId, channelAccessHash))).chats.FirstOrDefault().Value as Channel;
-
-		Func<Link, bool> filter = link =>
-		{
-			var filter = Builders<PostedLink>.Filter.Eq(field => field.SourceUrl, link.SourceUrl);
-			return !_postedCollection.Find(filter).Any();
-		};
-
-		var categories = new List<string>{"General Categories"}.Shuffle().Take(1);
-		var exceptCategories = new[] {"ignore"};
-		var preFilter = Builders<Link>.Filter.And(
-			Builders<Link>.Filter.Gt(link => link.UpVotes, 1000),
-			Builders<Link>.Filter.AnyIn(link => link.Category, categories),
-			Builders<Link>.Filter.AnyNin(link => link.Category, exceptCategories),
-			Builders<Link>.Filter.Exists(link => link.Urls),
-			Builders<Link>.Filter.Ne(link => link.Urls, Array.Empty<string>()),
-			Builders<Link>.Filter.Or(
-			Builders<Link>.Filter.Eq(link => link.ErrorMessage, string.Empty),
-				Builders<Link>.Filter.Exists(link => link.ErrorMessage, false)));
+		var channel = await _client.GetChannel(channelId, channelUserName);
 
 		var limit = 1;
-		var documents = _linkCollection.Find(preFilter).SortByDescending(field => field.UpVotes).ToEnumerable()
-			.Where(filter).Take(limit).ToList();
-		if (documents.Count() == 0)
-			_logger.LogWarning($"Documents count is 0 for {categories.First()}");
+		var documents = GetLinks(limit);
 		while (!context.CancellationToken.IsCancellationRequested && limit-- > 0 && documents.Count > 0)
 		{
 			var document = documents.First();
@@ -107,13 +77,34 @@ public class SendJob: IJob
 			await _postedCollection.InsertOneAsync(postedLink);
 		}
 
-		var savedState = new SavedState
-		{
-			Channels = _client.AllAccessHashesFor<Channel>().ToList(),
-			Users = _client.AllAccessHashesFor<User>().ToList()
-		};
-		await using var stateStream = File.Create("SavedState.json");
-		await JsonSerializer.SerializeAsync(stateStream, savedState);
+		await _client.SaveAccessHash(me, _accessHashCollection);
 		_client.Dispose();
+	}
+
+	private List<Link> GetLinks(int limit)
+	{
+		Func<Link, bool> filter = link =>
+		{
+			var filter = Builders<PostedLink>.Filter.Eq(field => field.SourceUrl, link.SourceUrl);
+			return !_postedCollection.Find(filter).Any();
+		};
+
+		var categories = new List<string>{"General Categories"}.Shuffle().Take(1);
+		var exceptCategories = new[] {"ignore"};
+		var preFilter = Builders<Link>.Filter.And(
+			Builders<Link>.Filter.Gt(link => link.UpVotes, 1000),
+			Builders<Link>.Filter.AnyIn(link => link.Category, categories),
+			Builders<Link>.Filter.AnyNin(link => link.Category, exceptCategories),
+			Builders<Link>.Filter.Exists(link => link.Urls),
+			Builders<Link>.Filter.Ne(link => link.Urls, Array.Empty<string>()),
+			Builders<Link>.Filter.Or(
+				Builders<Link>.Filter.Eq(link => link.ErrorMessage, string.Empty),
+				Builders<Link>.Filter.Exists(link => link.ErrorMessage, false)));
+
+		var documents = _linkCollection.Find(preFilter).SortByDescending(field => field.UpVotes).ToEnumerable()
+			.Where(filter).Take(limit).ToList();
+		if (!documents.Any())
+			_logger.LogWarning($"Documents count is 0 for {categories.First()}");
+		return documents;
 	}
 }
