@@ -5,6 +5,7 @@ public abstract record Link
 	public string PermaLink { get; init; }
     public string SourceUrl { get; init; }
     public string[] Category { get; init; }
+    public string Description { get; init; }
 }
 
 public record RedditLink: Link

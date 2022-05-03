@@ -53,12 +53,13 @@ public class SendJob: IJob
 			foreach (var mediaGroup in mediaGroups)
 			foreach (var urlChunk in mediaGroup.Chunk(10))
 			{
+				var description = string.IsNullOrEmpty(document.Description)? "": Markdown.Escape(document.Description) + "\n\n";
 				var sourceLink = string.IsNullOrEmpty(document.PermaLink)? "": $"[Source]({document.PermaLink})";
 				var tags = string.Join(' ', document.Category.Select(category => '#' + 
 					category
 						.Replace(' ', '_').Replace('-', '_')
 						.Replace('/', '_').Replace('\\', '_')));
-				var caption = ("*Categories:* " + Markdown.Escape(tags) + "\n\n" + "*" + sourceLink + "*").Trim();
+				var caption = (description + "*Categories:* " + Markdown.Escape(tags) + "\n\n" + "*" + sourceLink + "*").Trim();
 				var entities = _client.MarkdownToEntities(ref caption);
 				await _client.SafeSendAlbumAsync(channel, urlChunk, caption, entities: entities);
 				documents.Remove(document);

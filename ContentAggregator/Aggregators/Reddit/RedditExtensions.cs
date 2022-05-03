@@ -15,6 +15,7 @@ public static class RedditExtensions
 			.Select(post => new RedditLink
 			{
 				PermaLink = "https://www.reddit.com" + post.Permalink,
+				Description = post.Title,
 				Subreddit = post.Subreddit,
 				SourceUrl = post.URL,
 				UpVotes = post.UpVotes,
