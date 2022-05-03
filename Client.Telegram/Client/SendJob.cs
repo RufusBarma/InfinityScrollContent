@@ -24,7 +24,7 @@ public class SendJob: IJob
 		var senderDb = dbClient.GetDatabase("b7kltbu2j3tfrgn");
 		_postedCollection = senderDb.GetCollection<PostedLink>("PostedLinks");
 		var accessHashDb = dbClient.GetDatabase("b7kltbu2j3tfrgn");
-		_accessHashCollection = senderDb.GetCollection<SavedState>("AccessHash");
+		_accessHashCollection = accessHashDb.GetCollection<SavedState>("AccessHash");
 		_client = client;
 	}
 

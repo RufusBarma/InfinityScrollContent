@@ -42,7 +42,7 @@ var serviceProvider = new ServiceCollection()
 			q.ScheduleJob<SendJob>(trigger => trigger
 				.WithIdentity("Combined Configuration Trigger")
 				// .StartNow()
-				.WithCronSchedule("0 0 */1 * * ?")
+				.WithCronSchedule("0 0 */2 * * ?")
 				.WithDescription("my awesome trigger configured for a job with single call")
 			);
 		})
