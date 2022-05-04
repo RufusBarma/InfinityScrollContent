@@ -39,7 +39,9 @@ public class SendJob: IJob
 		var channel = await _client.GetChannel(channelId, channelUserName);
 
 		var limit = 1;
-		var documents = GetLinks(limit);
+		var categories = new[] {"General Categories"};
+		var exceptCategories = new[] {"Ignore"};
+		var documents = GetLinks(limit, categories, exceptCategories);
 		while (!context.CancellationToken.IsCancellationRequested && limit-- > 0 && documents.Count > 0)
 		{
 			var document = documents.First();
@@ -82,30 +84,30 @@ public class SendJob: IJob
 		_client.Dispose();
 	}
 
-	private List<Link> GetLinks(int limit)
+	private List<Link> GetLinks(int limit, IEnumerable<string> categories, string[] exceptCategories)
 	{
-		Func<Link, bool> filter = link =>
+		foreach (var category in categories.Shuffle())
 		{
-			var filter = Builders<PostedLink>.Filter.Eq(field => field.SourceUrl, link.SourceUrl);
-			return !_postedCollection.Find(filter).Any();
-		};
+			var filter = Builders<LinkWithPosted>.Filter.And(
+			Builders<LinkWithPosted>.Filter.AnyIn(link => link.Category, new List<string>{category}),
+				Builders<LinkWithPosted>.Filter.AnyNin(link => link.Category, exceptCategories),
+				Builders<LinkWithPosted>.Filter.Exists(link => link.Urls),
+				Builders<LinkWithPosted>.Filter.Ne(link => link.Urls, Array.Empty<string>()),
+				Builders<LinkWithPosted>.Filter.Or(
+					Builders<LinkWithPosted>.Filter.Eq(link => link.ErrorMessage, string.Empty),
+					Builders<LinkWithPosted>.Filter.Exists(link => link.ErrorMessage, false)));
 
-		var categories = new List<string> {"General Categories"}.Shuffle();
-		foreach (var category in categories)
-		{
-			var exceptCategories = new[] {"ignore"};
-			var preFilter = Builders<Link>.Filter.And(
-				// Builders<Link>.Filter.Gt(link => link.UpVotes, 1000),
-				Builders<Link>.Filter.AnyIn(link => link.Category, new List<string>{category}),
-				Builders<Link>.Filter.AnyNin(link => link.Category, exceptCategories),
-				Builders<Link>.Filter.Exists(link => link.Urls),
-				Builders<Link>.Filter.Ne(link => link.Urls, Array.Empty<string>()),
-				Builders<Link>.Filter.Or(
-					Builders<Link>.Filter.Eq(link => link.ErrorMessage, string.Empty),
-					Builders<Link>.Filter.Exists(link => link.ErrorMessage, false)));
-
-			var documents = _linkCollection.Find(preFilter).SortByDescending(field => field.UpVotes).ToEnumerable()
-				.Where(filter).Take(limit).ToList();
+			var documents = _linkCollection
+				.Aggregate()
+				.Lookup<Link, PostedLink, LinkWithPosted>(_postedCollection, fromType => fromType.SourceUrl,
+					targetType => targetType.SourceUrl, output => output.PostedLinks)
+				.Match(link => !link.PostedLinks.Any())
+				.Match(filter)
+				.SortByDescending(link => link.UpVotes)
+				.ToEnumerable()
+				.Take(limit)
+				.Cast<Link>()
+				.ToList();
 			if (!documents.Any())
 				_logger.LogWarning($"Documents count is 0 for {category}");
 			else
