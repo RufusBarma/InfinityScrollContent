@@ -22,7 +22,11 @@ var serviceProvider = new ServiceCollection()
 	.AddSingleton<RedGifsResolver>()
 	.AddSingleton<IUrlResolver, GfycatResolver>()
 	.AddSingleton<IConfiguration>(configurationRoot)
-	.AddSingleton<IMongoClient, MongoClient>(sp => new MongoClient(configurationRoot.GetConnectionString("DefaultConnection")))
+	.AddSingleton<IMongoDatabase>(_ =>
+	{
+		var mongoUrl = new MongoUrl(configurationRoot.GetConnectionString("DefaultConnection"));
+		return new MongoClient(mongoUrl).GetDatabase(mongoUrl.DatabaseName);
+	})
 	.AddLogging(configure => configure.AddConsole())
 	.BuildServiceProvider();
 

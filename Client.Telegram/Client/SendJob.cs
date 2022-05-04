@@ -16,15 +16,12 @@ public class SendJob: IJob
 	private readonly IMongoCollection<PostedLink> _postedCollection;
 	private readonly IMongoCollection<SavedState> _accessHashCollection;
 
-	public SendJob(WTelegram.Client client, IMongoClient dbClient, ILogger<SendJob> logger)
+	public SendJob(WTelegram.Client client, IMongoDatabase dbClient, ILogger<SendJob> logger)
 	{
 		_logger = logger;
-		var redditDb = dbClient.GetDatabase("b7kltbu2j3tfrgn");
-		_linkCollection = redditDb.GetCollection<Link>("Links");
-		var senderDb = dbClient.GetDatabase("b7kltbu2j3tfrgn");
-		_postedCollection = senderDb.GetCollection<PostedLink>("PostedLinks");
-		var accessHashDb = dbClient.GetDatabase("b7kltbu2j3tfrgn");
-		_accessHashCollection = accessHashDb.GetCollection<SavedState>("AccessHash");
+		_linkCollection = dbClient.GetCollection<Link>("Links");
+		_postedCollection = dbClient.GetCollection<PostedLink>("PostedLinks");
+		_accessHashCollection = dbClient.GetCollection<SavedState>("AccessHash");
 		_client = client;
 	}
 

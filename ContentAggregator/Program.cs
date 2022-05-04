@@ -5,6 +5,7 @@ using ContentAggregator.CategoriesAggregators.Reddit;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using MongoDB.Driver;
 
 var configurationRoot = new ConfigurationBuilder()
 	.AddEnvironmentVariables()
@@ -12,6 +13,11 @@ var configurationRoot = new ConfigurationBuilder()
 	.Build();
 
 var serviceProvider = new ServiceCollection()
+	.AddSingleton<IMongoDatabase>(_ =>
+	{
+		var mongoUrl = new MongoUrl(configurationRoot.GetConnectionString("DefaultConnection"));
+		return new MongoClient(mongoUrl).GetDatabase(mongoUrl.DatabaseName);
+	})
 	.AddTransient<IAggregator, RedditAggregator>()
 	.AddSingleton<AggregatorComposer>()
 	.AddTransient<RedditHtmlCategoriesAggregator>()

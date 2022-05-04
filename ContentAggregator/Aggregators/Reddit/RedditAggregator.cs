@@ -19,7 +19,7 @@ public class RedditAggregator: IAggregator
 	private ILogger _logger;
 	private Task _aggregatorTask;
 
-	public RedditAggregator(IConfiguration config, ICategoriesAggregator categoriesAggregator, ILogger<RedditAggregator> logger)
+	public RedditAggregator(IConfiguration config, ICategoriesAggregator categoriesAggregator, ILogger<RedditAggregator> logger, IMongoDatabase database)
 	{
 		_logger = logger;
 		var appId = config.GetRequiredSection("app_id_reddit").Value;
@@ -27,9 +27,8 @@ public class RedditAggregator: IAggregator
 		var appSecret = config.GetRequiredSection("app_secret_reddit").Value;
 		var accessToken = config.GetRequiredSection("access_token_reddit").Value;
 		_reddit = new RedditClient(appId, refreshToken, appSecret, accessToken);
-		var redditDb = new MongoClient(config.GetConnectionString("DefaultConnection")).GetDatabase("Reddit");
-		_linkCollection = redditDb.GetCollection<RedditLink>("Links");
-		_positions = redditDb.GetCollection<CategoryPosition>("CategoryPositions");
+		_linkCollection = database.GetCollection<RedditLink>("Links");
+		_positions = database.GetCollection<CategoryPosition>("CategoryPositions");
 		_categoriesAggregator = categoriesAggregator;
 	}
 
@@ -41,7 +40,12 @@ public class RedditAggregator: IAggregator
 
 	private async Task RunAggregator(List<CategoryItem> categories, CancellationToken cancellationToken)
 	{
-		var categoryItems = categories;//.Shuffle().Take(5);
+		var inCategory = new[] {"Ass", "Redhead", "Freckles", "Light Skin", "Cum Play", "General Categories", "Sex", "Specific Actor/Actress"};
+		var notCategory = new[] {"Humorous", "LGBT", "Non-Porn NSFW", "Desktop Wallpaper"};
+		var categoryItems = categories
+			.Where(category => 
+				category.Group.Any(group => inCategory.Contains(group) && 
+				category.Group.All(group => !notCategory.Contains(group))));//.Shuffle().Take(5);
 		foreach (var linksTask in categoryItems
 			         .Select(category => (category, Subreddit: _reddit.GetSubreddit(category.Title, _logger)))
 			         .Where(tuple => tuple.Subreddit.IsSome)

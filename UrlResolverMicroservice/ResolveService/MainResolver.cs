@@ -14,12 +14,11 @@ public class MainResolver : IMainResolver
 	private readonly IEnumerable<IUrlResolver> _urlResolvers;
 	private readonly ILogger<MainResolver> _logger;
 
-	public MainResolver(IMongoClient mongoClient, IEnumerable<IUrlResolver> urlResolvers, ILogger<MainResolver> logger)
+	public MainResolver(IMongoDatabase database, IEnumerable<IUrlResolver> urlResolvers, ILogger<MainResolver> logger)
 	{
 		_urlResolvers = urlResolvers;
 		_logger = logger;
-		var redditDb = mongoClient.GetDatabase("Reddit");
-		_linkCollection = redditDb.GetCollection<Link>("Links");
+		_linkCollection = database.GetCollection<Link>("Links");
 		_linkTypes = new Dictionary<string, LinkType>();
 		"jpeg,png,bmp,webp,tiff,avif".Split(',').ForEach(extension => _linkTypes.Add(extension, LinkType.Img));
 		"mp4,mpeg,ogg,gifv".Split(',').ForEach(extension => _linkTypes.Add(extension, LinkType.Video));

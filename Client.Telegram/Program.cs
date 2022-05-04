@@ -23,8 +23,11 @@ var serviceProvider = new ServiceCollection()
 	.AddSingleton<IConfiguration>(configurationRoot)
 	.AddLogging(configure => configure.AddConsole())
 	.AddTransient<SendJob>()
-	.AddSingleton<IMongoClient, MongoClient>(sp =>
-		new MongoClient(configurationRoot.GetConnectionString("DefaultConnection")))
+	.AddSingleton<IMongoDatabase>(_ =>
+	{
+		var mongoUrl = new MongoUrl(configurationRoot.GetConnectionString("DefaultConnection"));
+		return new MongoClient(mongoUrl).GetDatabase(mongoUrl.DatabaseName);
+	})
 	.AddQuartz(q =>
 		{
 			// handy when part of cluster or you want to otherwise identify multiple schedulers
