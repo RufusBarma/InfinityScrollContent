@@ -30,9 +30,11 @@ public class ImgurResolver: IUrlResolver
 						.ToArray();
 			}),
 		"gallery" => (hash => $"https://api.imgur.com/3/gallery/album/{hash}", 
-			data => data["data"]["link"]["images"]
-				.Select(image => image["link"].Value<string>())
-				.ToArray()),
+			data => data["data"]["images"] != null
+				? _endpoints("a").getUrls(data)
+				: data["data"]["link"]["images"]
+					.Select(image => image["link"].Value<string>())
+					.ToArray()),
 		"r" => _endpoints("")
 	};
 
@@ -66,10 +68,13 @@ public class ImgurResolver: IUrlResolver
 			await _distributedCache.SetAsync("Imgur.LimitRich", true, options);
 		}
 		if (response.StatusCode is not HttpStatusCode.OK)
-			return response.StatusDescription;
+			if (string.IsNullOrEmpty(response.StatusDescription))
+				throw new Exception("Status description is null");
+			else 
+				return response.StatusDescription;
 		var data = JObject.Parse(response.Content);
 		var urls = endpointFuncs.getUrls(data);
-		return urls.Any()? urls: "Empty collection";
+		return urls.Any() ? urls : "Empty collection";
 	}
 
 	public bool CanResolve(string url) => url.Contains("imgur.com");

@@ -24,9 +24,9 @@ public class GfycatResolver : IUrlResolver
 		if (response.StatusCode is not HttpStatusCode.OK)
 			return await GetFromRedGifs(url);
 		var data = JObject.Parse(response.Content);
-		var resultUrl = data["gfyItem"]["mp4Url"].Value<string>();
+		var resultUrl = data["gfyItem"]["mp4Url"]?.Value<string>();
 		if (string.IsNullOrEmpty(resultUrl))
-			return "Urls not found";
+			return $"Urls not found for {url}";
 		return new[] { resultUrl };
 	}
 
