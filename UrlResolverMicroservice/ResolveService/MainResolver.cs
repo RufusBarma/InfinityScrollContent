@@ -1,3 +1,4 @@
+using System.Threading.Tasks.Dataflow;
 using LanguageExt;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
@@ -27,49 +28,69 @@ public class MainResolver : IMainResolver
 
 	public async Task Start(CancellationToken cancellationToken)
 	{
-		// _urlResolvers.Select(urlResolver => new TransformManyBlock<string, >())
-		var filter = Builders<Link>.Filter.And(Builders<Link>.Filter.In("Urls", new[] { null, Array.Empty<string>() }),
-			Builders<Link>.Filter.Or(
-				Builders<Link>.Filter.Eq(link => link.ErrorMessage, string.Empty),
-				Builders<Link>.Filter.Exists(link => link.ErrorMessage, false)));
-		var emptyUrls = _linkCollection.Find(filter).ToEnumerable();
-		//TODO parallelize resolve over each resolver
-		foreach (var link in emptyUrls)
+		var updateLinksInDbBlock =
+			new ActionBlock<IEnumerable<IEnumerable<(Link link, Either<string, string[]> urlsEither)>>>(UpdateLinksInDbBatch);
+		var updateLinksInDbBatchBlock =
+			new BatchBlock<IEnumerable<(Link link, Either<string, string[]> urlsEither)>>(10);
+		updateLinksInDbBatchBlock.LinkTo(updateLinksInDbBlock);
+
+		var resolverTransformBlocks = _urlResolvers.ToDictionary(urlResolver => urlResolver, _ =>
+		{
+			var batchBlock = new BatchBlock<Link>(2);
+			var resolveBlock = new TransformBlock<IEnumerable<Link>, IEnumerable<(Link link, Either<string, string[]>)>>(ResolveUrl, new ExecutionDataflowBlockOptions()
+			{
+				MaxDegreeOfParallelism = 1,
+				CancellationToken = cancellationToken
+			});
+			batchBlock.LinkTo(resolveBlock);
+			resolveBlock.LinkTo(updateLinksInDbBatchBlock);
+			return batchBlock;
+		});
+		foreach (var link in _linkCollection.GetEmptyUrls())
 		{
 			if (cancellationToken.IsCancellationRequested)
 				break;
-
-			var urlsEither = await GetUrlsAsync(link.SourceUrl);
-			var skipFlag = false;
-			var update = urlsEither.Match(urls => Builders<Link>.Update
-					.Set(updLink => updLink.Urls, urls)
-					.Set(updLink => updLink.Type, GetLinkType(urls.FirstOrDefault()))
-					.Set(updLink => updLink.IsGallery, urls.Length > 1),
-				error =>
+			var url = link.SourceUrl;
+			if (Path.HasExtension(url))
+				if (url.Contains("imgur"))
+					url = Path.ChangeExtension(url, null);
+				else
 				{
-					if (error == "Skip")
-						skipFlag = true;
-					return Builders<Link>.Update.Set(updLink => updLink.ErrorMessage, error);
-				});
-			if (skipFlag)
+					Either<string, string[]> urls = new[] {url};
+					await updateLinksInDbBatchBlock.SendAsync(new []{(link, urls)});
+					continue;
+				}
+			var resolver = _urlResolvers.FirstOrDefault(resolver => resolver.CanResolve(url));
+			if (resolver == null)
 			{
-				_logger.LogInformation("Skip {link.SourceUrl}", link.SourceUrl);
+				_logger.LogWarning("Resolver doesn't exist for {Url}", url);
+				Either<string, string[]> error = "Resolver doesn't exist";
+				await updateLinksInDbBatchBlock.SendAsync(new []{(link, error)});
 				continue;
 			}
-			_logger.LogInformation("Resolved {link.SourceUrl}", link.SourceUrl);
-			var updateFilter = Builders<Link>.Filter.Eq("_id", link._id);
-			await _linkCollection.UpdateOneAsync(updateFilter, update, new UpdateOptions(){IsUpsert = true});
+
+			await resolverTransformBlocks[resolver].SendAsync(link);
 		}
+		updateLinksInDbBatchBlock.Complete();
+		await updateLinksInDbBatchBlock.Completion;
+
 		_logger.LogInformation("Resolve completed");
 	}
 
-	private Task<IEnumerable<(Link link, Either<string, string[]>)>> ResolveUrl(IEnumerable<Link> links)
+	private async Task<IEnumerable<(Link link, Either<string, string[]>)>> ResolveUrl(IEnumerable<Link> links)
 	{
-		return Task.WhenAll(links.Select(async link => (link, await GetUrlsAsync(link.SourceUrl))));
+		return await Task.WhenAll(links.Select(async link => (link, await GetUrlsAsync(link.SourceUrl))));
+	}
+
+	private async Task UpdateLinksInDbBatch(IEnumerable<IEnumerable<(Link link, Either<string, string[]> urlsEither)>> resolvedLinksBatch)
+	{
+		await UpdateLinksInDb(resolvedLinksBatch.SelectMany(resolvedLinks => resolvedLinks));
 	}
 
 	private async Task UpdateLinksInDb(IEnumerable<(Link link, Either<string, string[]> urlsEither)> resolvedLinks)
 	{
+		var g = resolvedLinks.ToList();
+		_logger.LogInformation("Update for {resolverLinkdsCount}", g.Count);
 		foreach (var (link, urlsEither) in resolvedLinks)
 		{
 			var skipFlag = false;
