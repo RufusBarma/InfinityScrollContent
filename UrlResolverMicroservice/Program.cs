@@ -44,6 +44,11 @@ AppDomain.CurrentDomain.ProcessExit += async (_, _) =>
 	await serviceProvider.DisposeAsync();
 };
 
+Console.CancelKeyPress += (sender, e) =>
+{
+	cancellationTokenSource.Cancel();
+};
+
 while (!cancellationTokenSource.IsCancellationRequested)
 {
 	logger.LogInformation("Start resolving");
