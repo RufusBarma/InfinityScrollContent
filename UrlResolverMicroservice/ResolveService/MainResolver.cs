@@ -21,7 +21,7 @@ public class MainResolver : IMainResolver
 		_logger = logger;
 		_linkCollection = database.GetCollection<Link>("Links");
 		_linkTypes = new Dictionary<string, LinkType>();
-		"jpeg,png,bmp,webp,tiff,avif".Split(',').ForEach(extension => _linkTypes.Add(extension, LinkType.Img));
+		"jpeg,png,bmp,webp,tiff,avif,jpg".Split(',').ForEach(extension => _linkTypes.Add(extension, LinkType.Img));
 		"mp4,mpeg,ogg,gifv".Split(',').ForEach(extension => _linkTypes.Add(extension, LinkType.Video));
 		_linkTypes.Add("gif", LinkType.Gif);
 	}
@@ -56,9 +56,13 @@ public class MainResolver : IMainResolver
 					url = Path.ChangeExtension(url, null);
 				else
 				{
-					Either<string, string[]> urls = new[] {url};
-					await updateLinksInDbBatchBlock.SendAsync(new []{(link, urls)});
-					continue;
+					var extension = Path.GetExtension(url).Substring(1);
+					if (_linkTypes.Keys.Any(key => extension == key))
+					{
+						Either<string, string[]> urls = new[] {url};
+						await updateLinksInDbBatchBlock.SendAsync(new []{(link, urls)});
+						continue;
+					}
 				}
 			var resolver = _urlResolvers.FirstOrDefault(resolver => resolver.CanResolve(url));
 			if (resolver == null)
