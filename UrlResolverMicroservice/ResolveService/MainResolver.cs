@@ -28,22 +28,27 @@ public class MainResolver : IMainResolver
 
 	public async Task Start(CancellationToken cancellationToken)
 	{
+		var linkOption = new DataflowLinkOptions()
+		{
+			PropagateCompletion = true
+		};
 		var updateLinksInDbBlock =
 			new ActionBlock<IEnumerable<IEnumerable<(Link link, Either<string, string[]> urlsEither)>>>(UpdateLinksInDbBatch);
 		var updateLinksInDbBatchBlock =
 			new BatchBlock<IEnumerable<(Link link, Either<string, string[]> urlsEither)>>(10);
-		updateLinksInDbBatchBlock.LinkTo(updateLinksInDbBlock);
+		updateLinksInDbBatchBlock.LinkTo(updateLinksInDbBlock, linkOption);
 
 		var resolverTransformBlocks = _urlResolvers.ToDictionary(urlResolver => urlResolver, _ =>
 		{
-			var batchBlock = new BatchBlock<Link>(2);
-			var resolveBlock = new TransformBlock<IEnumerable<Link>, IEnumerable<(Link link, Either<string, string[]>)>>(ResolveUrl, new ExecutionDataflowBlockOptions()
+			var option = new ExecutionDataflowBlockOptions()
 			{
 				MaxDegreeOfParallelism = 1,
 				CancellationToken = cancellationToken
-			});
-			batchBlock.LinkTo(resolveBlock);
-			resolveBlock.LinkTo(updateLinksInDbBatchBlock);
+			};
+			var batchBlock = new BatchBlock<Link>(2);
+			var resolveBlock = new TransformBlock<IEnumerable<Link>, IEnumerable<(Link link, Either<string, string[]>)>>(ResolveUrl, option);
+			batchBlock.LinkTo(resolveBlock, linkOption);
+			resolveBlock.LinkTo(updateLinksInDbBatchBlock, linkOption);
 			return batchBlock;
 		});
 		foreach (var link in _linkCollection.GetEmptyUrls())
@@ -75,8 +80,9 @@ public class MainResolver : IMainResolver
 
 			await resolverTransformBlocks[resolver].SendAsync(link);
 		}
-		updateLinksInDbBatchBlock.Complete();
-		await updateLinksInDbBatchBlock.Completion;
+
+		resolverTransformBlocks.Values.ForEach(resolver => resolver.Complete());
+		await updateLinksInDbBlock.Completion;
 
 		_logger.LogInformation("Resolve completed");
 	}
@@ -113,7 +119,7 @@ public class MainResolver : IMainResolver
 				_logger.LogInformation("Skip {link.SourceUrl}", link.SourceUrl);
 				continue;
 			}
-			_logger.LogInformation("Resolved {link.SourceUrl}", link.SourceUrl);
+			// _logger.LogInformation("Resolved {link.SourceUrl}", link.SourceUrl);
 			var updateFilter = Builders<Link>.Filter.Eq("_id", link._id);
 			await _linkCollection.UpdateOneAsync(updateFilter, update, new UpdateOptions(){IsUpsert = true});
 		}
