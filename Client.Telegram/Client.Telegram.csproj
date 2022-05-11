@@ -9,7 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="MediaToolkit" Version="1.1.0.1" />
+      <PackageReference Include="MediaToolkit.NetCore" Version="0.2.1-preview" />
       <PackageReference Include="Microsoft.Extensions.Configuration" Version="7.0.0-preview.2.22152.2" />
       <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="6.0.1" />
       <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="6.0.0" />

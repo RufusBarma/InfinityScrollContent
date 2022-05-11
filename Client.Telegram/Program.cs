@@ -1,4 +1,6 @@
-﻿using Client.Telegram.Client;
+﻿using System.Runtime.InteropServices;
+using Client.Telegram.Client;
+using MediaToolkit;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -11,6 +13,8 @@ var configurationRoot = new ConfigurationBuilder()
 	.Build();
 
 var serviceProvider = new ServiceCollection()
+	.AddMediaToolkit(RuntimeInformation.IsOSPlatform(OSPlatform.Windows)? @"C:\ffmpeg\ffmpeg.exe" : @"/usr/bin/ffmpeg")
+	.AddTransient<IVideoTool, FfmpegVideoTool>()
 	.AddTransient(_ =>
 		new WTelegram.Client(what =>
 		{
@@ -28,6 +32,9 @@ var serviceProvider = new ServiceCollection()
 		var mongoUrl = new MongoUrl(configurationRoot.GetConnectionString("DefaultConnection"));
 		return new MongoClient(mongoUrl).GetDatabase(mongoUrl.DatabaseName);
 	})
+	.AddTransient<IMongoCollection<SavedState>>(provider => provider.GetService<IMongoDatabase>().GetCollection<SavedState>("AccessHash"))
+	.AddTransient<ISender, ClientSender>()
+	.AddSingleton<ClientSenderExtensions>()
 	.AddQuartz(q =>
 		{
 			// handy when part of cluster or you want to otherwise identify multiple schedulers
