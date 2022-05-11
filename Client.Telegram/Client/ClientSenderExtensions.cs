@@ -154,7 +154,6 @@ public class ClientSenderExtensions
 				var thumbNailResized = await Resize(thumbNail);
 
 				var duration = metadata.Duration.TotalSeconds;
-				var size = metadata.FrameSize;
 				var withAudio = metadata.HasAudio;
 				var isSmallFile = fileInfo.Length < TenMegaBytes;
 				var isGif = isSmallFile && !withAudio;
@@ -173,8 +172,8 @@ public class ClientSenderExtensions
 							new DocumentAttributeVideo
 							{
 								duration = (int)duration,
-								w = size.width,
-								h = size.height,
+								w = metadata.Width,
+								h = metadata.Height,
 								flags = DocumentAttributeVideo.Flags.supports_streaming
 							}
 						}

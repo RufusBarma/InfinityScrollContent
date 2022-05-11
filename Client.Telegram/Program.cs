@@ -1,6 +1,4 @@
-﻿using System.Runtime.InteropServices;
-using Client.Telegram.Client;
-using MediaToolkit;
+﻿using Client.Telegram.Client;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -13,7 +11,6 @@ var configurationRoot = new ConfigurationBuilder()
 	.Build();
 
 var serviceProvider = new ServiceCollection()
-	.AddMediaToolkit(RuntimeInformation.IsOSPlatform(OSPlatform.Windows)? @"C:\ffmpeg\ffmpeg.exe" : @"/usr/bin/ffmpeg")
 	.AddTransient<IVideoTool, FfmpegVideoTool>()
 	.AddTransient(_ =>
 		new WTelegram.Client(what =>
@@ -51,7 +48,7 @@ var serviceProvider = new ServiceCollection()
 
 			q.ScheduleJob<SendJob>(trigger => trigger
 				.WithIdentity("Combined Configuration Trigger")
-				// .StartNow()
+				.StartNow()
 				.WithCronSchedule("0 0 */2 * * ?")
 				.WithDescription("my awesome trigger configured for a job with single call")
 			);
