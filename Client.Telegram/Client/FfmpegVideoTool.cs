@@ -23,7 +23,7 @@ public class FfmpegVideoTool : IVideoTool
 		var outputPath = Path.ChangeExtension(videoPath, ".png");
 		var conversion = await FFmpeg.Conversions.FromSnippet.Snapshot(videoPath, outputPath, seekSpan);
 		var result = await conversion.Start();
-		var fileStream = File.OpenRead(outputPath);
+		await using var fileStream = File.OpenRead(outputPath);
 		var outputStream = new MemoryStream();
 		await fileStream.CopyToAsync(outputStream);
 		outputStream.Position = 0;

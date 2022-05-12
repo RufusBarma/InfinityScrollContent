@@ -4,11 +4,17 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using Quartz;
+using Xabe.FFmpeg;
+using Xabe.FFmpeg.Downloader;
 
 var configurationRoot = new ConfigurationBuilder()
 	.AddEnvironmentVariables()
 	.AddJsonFile("appsettings.json")
 	.Build();
+
+var ffmpegPath = "./FFmpeg";
+FFmpeg.SetExecutablesPath(ffmpegPath);
+await FFmpegDownloader.GetLatestVersion(FFmpegVersion.Official, ffmpegPath);
 
 var serviceProvider = new ServiceCollection()
 	.AddTransient<IVideoTool, FfmpegVideoTool>()
