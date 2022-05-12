@@ -17,6 +17,7 @@
       <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.1" />
       <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="6.0.0" />
       <PackageReference Include="MongoDB.Driver" Version="2.15.0" />
+      <PackageReference Include="Mono.Posix.NETStandard" Version="5.20.1-preview" />
       <PackageReference Include="morelinq" Version="3.3.2" />
       <PackageReference Include="Quartz.Extensions.DependencyInjection" Version="3.4.0" />
       <PackageReference Include="Quartz.Extensions.Hosting" Version="3.4.0" />
