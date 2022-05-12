@@ -4,13 +4,20 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using Quartz;
+using Xabe.FFmpeg;
+using Xabe.FFmpeg.Downloader;
 
 var configurationRoot = new ConfigurationBuilder()
 	.AddEnvironmentVariables()
 	.AddJsonFile("appsettings.json")
 	.Build();
 
+var ffmpegPath = "./FFmpeg";
+FFmpeg.SetExecutablesPath(ffmpegPath);
+await FFmpegDownloader.GetLatestVersion(FFmpegVersion.Official, ffmpegPath);
+
 var serviceProvider = new ServiceCollection()
+	.AddTransient<IVideoTool, FfmpegVideoTool>()
 	.AddTransient(_ =>
 		new WTelegram.Client(what =>
 		{
@@ -28,6 +35,9 @@ var serviceProvider = new ServiceCollection()
 		var mongoUrl = new MongoUrl(configurationRoot.GetConnectionString("DefaultConnection"));
 		return new MongoClient(mongoUrl).GetDatabase(mongoUrl.DatabaseName);
 	})
+	.AddTransient<IMongoCollection<SavedState>>(provider => provider.GetService<IMongoDatabase>().GetCollection<SavedState>("AccessHash"))
+	.AddTransient<ISender, ClientSender>()
+	.AddSingleton<ClientSenderExtensions>()
 	.AddQuartz(q =>
 		{
 			// handy when part of cluster or you want to otherwise identify multiple schedulers
@@ -44,7 +54,7 @@ var serviceProvider = new ServiceCollection()
 
 			q.ScheduleJob<SendJob>(trigger => trigger
 				.WithIdentity("Combined Configuration Trigger")
-				// .StartNow()
+				.StartNow()
 				.WithCronSchedule("0 0 */2 * * ?")
 				.WithDescription("my awesome trigger configured for a job with single call")
 			);
