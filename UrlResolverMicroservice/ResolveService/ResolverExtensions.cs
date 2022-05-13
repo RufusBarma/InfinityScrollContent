@@ -13,4 +13,11 @@ public static class ResolverExtensions
 				Builders<Link>.Filter.Exists(link => link.ErrorMessage, false)));
 		return collection.Find(filter).ToEnumerable();
 	}
+
+	public static Task WhenCanceled(this CancellationToken cancellationToken)
+	{
+		var tcs = new TaskCompletionSource<bool>();
+		cancellationToken.Register(s => ((TaskCompletionSource<bool>)s).SetResult(true), tcs);
+		return tcs.Task;
+	}
 }
