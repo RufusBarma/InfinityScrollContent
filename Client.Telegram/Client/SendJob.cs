@@ -45,36 +45,49 @@ public class SendJob: IJob
 		}
 	}
 
+	private List<Link> GetLinks(int limit, string category, string[] exceptCategories)
+	{
+		var filters = new List<FilterDefinition<LinkWithPosted>>
+		{
+			Builders<LinkWithPosted>.Filter.AnyNin(link => link.Category, exceptCategories),
+			Builders<LinkWithPosted>.Filter.Exists(link => link.Urls),
+			Builders<LinkWithPosted>.Filter.Ne(link => link.Urls, Array.Empty<string>()),
+			Builders<LinkWithPosted>.Filter.Or(
+				Builders<LinkWithPosted>.Filter.Eq(link => link.ErrorMessage, string.Empty),
+				Builders<LinkWithPosted>.Filter.Exists(link => link.ErrorMessage, false))
+		};
+		if (!string.IsNullOrEmpty(category))
+			filters.Add(Builders<LinkWithPosted>.Filter.AnyIn(link => link.Category, new List<string> {category}));
+		var filter = Builders<LinkWithPosted>.Filter.And(filters);
+
+		var documents = _linkCollection
+			.Aggregate()
+			.Lookup<Link, PostedLink, LinkWithPosted>(_postedCollection, fromType => fromType.SourceUrl,
+				targetType => targetType.SourceUrl, output => output.PostedLinks)
+			.Match(link => !link.PostedLinks.Any())
+			.Match(filter)
+			.SortByDescending(link => link.UpVotes)
+			.ToEnumerable()
+			.Take(limit)
+			.Cast<Link>()
+			.ToList();
+		return documents;
+	}
+
 	private List<Link> GetLinks(int limit, IEnumerable<string> categories, string[] exceptCategories)
 	{
 		foreach (var category in categories.Shuffle())
 		{
-			var filter = Builders<LinkWithPosted>.Filter.And(
-			Builders<LinkWithPosted>.Filter.AnyIn(link => link.Category, new List<string>{category}),
-				Builders<LinkWithPosted>.Filter.AnyNin(link => link.Category, exceptCategories),
-				Builders<LinkWithPosted>.Filter.Exists(link => link.Urls),
-				Builders<LinkWithPosted>.Filter.Ne(link => link.Urls, Array.Empty<string>()),
-				Builders<LinkWithPosted>.Filter.Or(
-					Builders<LinkWithPosted>.Filter.Eq(link => link.ErrorMessage, string.Empty),
-					Builders<LinkWithPosted>.Filter.Exists(link => link.ErrorMessage, false)));
-
-			var documents = _linkCollection
-				.Aggregate()
-				.Lookup<Link, PostedLink, LinkWithPosted>(_postedCollection, fromType => fromType.SourceUrl,
-					targetType => targetType.SourceUrl, output => output.PostedLinks)
-				.Match(link => !link.PostedLinks.Any())
-				.Match(filter)
-				.SortByDescending(link => link.UpVotes)
-				.ToEnumerable()
-				.Take(limit)
-				.Cast<Link>()
-				.ToList();
+			var documents = GetLinks(limit, category, exceptCategories);
 			if (!documents.Any())
 				_logger.LogWarning($"Documents count is 0 for {category}");
 			else
 				return documents;
 		}
-		_logger.LogWarning("All categories is empty");
-		return new List<Link>();
+
+		var documentsWithoutCategory = GetLinks(limit, string.Empty, exceptCategories);
+		if (!documentsWithoutCategory.Any())
+			_logger.LogWarning("All categories is empty");
+		return documentsWithoutCategory;
 	}
 }
