@@ -99,7 +99,7 @@ public class SendJob: IJob
 	private async Task<bool> IsFound(string url)
 	{
 		var client = new HttpClient(new HttpClientHandler{AllowAutoRedirect = false});
-		var result = await client.GetAsync(url);
+		var result = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
 		return result.IsSuccessStatusCode;
 	}
 }
