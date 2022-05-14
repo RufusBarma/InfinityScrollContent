@@ -30,8 +30,8 @@ public class SendJob: IJob
 
 		var limit = 1;
 		var categories = new[] {"General Categories"};
-		var exceptCategories = new[] {"Gay"};
-		var documents = GetLinks(limit, categories, exceptCategories);
+		var exceptCategories = new[] {""};
+		var documents = await (await GetLinks(categories, exceptCategories)).Where(link => link.Urls.Length <= 10).Take(limit).ToListAsync();
 		await foreach (var link in _sender.Send(documents, channelId, channelUserName, context.CancellationToken))
 		{
 			var postedLink = new PostedLink
@@ -45,7 +45,7 @@ public class SendJob: IJob
 		}
 	}
 
-	private List<Link> GetLinks(int limit, string category, string[] exceptCategories)
+	private IAsyncEnumerable<Link> GetLinks(string category, string[] exceptCategories)
 	{
 		var filters = new List<FilterDefinition<LinkWithPosted>>
 		{
@@ -68,26 +68,38 @@ public class SendJob: IJob
 			.Match(filter)
 			.SortByDescending(link => link.UpVotes)
 			.ToEnumerable()
-			.Take(limit)
 			.Cast<Link>()
-			.ToList();
+			.ToAsyncEnumerable()
+			.WhereAwait(async link =>
+			{
+				var parallelFound = link.Urls.Select(url => IsFound(url)).ToList();
+				await Task.WhenAll(parallelFound);
+				return parallelFound.All(url => url.Result);
+			});
 		return documents;
 	}
 
-	private List<Link> GetLinks(int limit, IEnumerable<string> categories, string[] exceptCategories)
+	private async Task<IAsyncEnumerable<Link>> GetLinks(IEnumerable<string> categories, string[] exceptCategories)
 	{
 		foreach (var category in categories.Shuffle())
 		{
-			var documents = GetLinks(limit, category, exceptCategories);
-			if (!documents.Any())
+			var documents = GetLinks(category, exceptCategories);
+			if (!await documents.AnyAsync())
 				_logger.LogWarning($"Documents count is 0 for {category}");
 			else
 				return documents;
 		}
 
-		var documentsWithoutCategory = GetLinks(limit, string.Empty, exceptCategories);
-		if (!documentsWithoutCategory.Any())
+		var documentsWithoutCategory = GetLinks(string.Empty, exceptCategories);
+		if (!await documentsWithoutCategory.AnyAsync())
 			_logger.LogWarning("All categories is empty");
 		return documentsWithoutCategory;
+	}
+
+	private async Task<bool> IsFound(string url)
+	{
+		var client = new HttpClient(new HttpClientHandler{AllowAutoRedirect = false});
+		var result = await client.GetAsync(url);
+		return result.IsSuccessStatusCode;
 	}
 }

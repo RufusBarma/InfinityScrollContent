@@ -1,8 +1,11 @@
-﻿using Client.Telegram.Client;
+﻿using System.Runtime.InteropServices;
+using Client.Telegram.Client;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
+using Mono.Unix.Native;
+using MoreLinq;
 using Quartz;
 using Xabe.FFmpeg;
 using Xabe.FFmpeg.Downloader;
@@ -15,6 +18,13 @@ var configurationRoot = new ConfigurationBuilder()
 var ffmpegPath = "./FFmpeg";
 FFmpeg.SetExecutablesPath(ffmpegPath);
 await FFmpegDownloader.GetLatestVersion(FFmpegVersion.Official, ffmpegPath);
+if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+{
+	new DirectoryInfo(ffmpegPath)
+		.GetFiles()
+		.Where(file => !file.Name.EndsWith(".json"))
+		.ForEach(file => Syscall.chmod(file.FullName, FilePermissions.S_IRUSR | FilePermissions.S_IWUSR | FilePermissions.S_IXUSR));
+}
 
 var serviceProvider = new ServiceCollection()
 	.AddTransient<IVideoTool, FfmpegVideoTool>()
