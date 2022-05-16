@@ -72,6 +72,9 @@ var serviceProvider = new ServiceCollection()
 	.AddQuartzHostedService(q => q.WaitForJobsToComplete = true)
 	.BuildServiceProvider();
 
+var telegramLogger = serviceProvider.GetRequiredService<ILogger<WTelegram.Client>>();
+WTelegram.Helpers.Log = (lvl, str) => telegramLogger.Log((LogLevel)lvl, str);
+
 var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
 var scheduler = await serviceProvider.GetRequiredService<ISchedulerFactory>().GetScheduler();
 var cancellationTokenSource = new CancellationTokenSource();
