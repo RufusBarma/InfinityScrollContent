@@ -1,5 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 using Client.Telegram.Client;
+using Client.Telegram.SenderSettings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -46,6 +47,9 @@ var serviceProvider = new ServiceCollection()
 		return new MongoClient(mongoUrl).GetDatabase(mongoUrl.DatabaseName);
 	})
 	.AddTransient<IMongoCollection<SavedState>>(provider => provider.GetService<IMongoDatabase>().GetCollection<SavedState>("AccessHash"))
+	.AddTransient<IMongoCollection<SenderSettings>>(provider => provider.GetService<IMongoDatabase>().GetCollection<SenderSettings>("SenderSettings"))
+	.AddTransient<ISenderSettingsFetcher, SenderSettingsFromMongoDb>()
+	.AddTransient<SenderSettings>(provider => provider.GetRequiredService<ISenderSettingsFetcher>().Fetch().ToEnumerable().First())
 	.AddTransient<ISender, ClientSender>()
 	.AddSingleton<ClientSenderExtensions>()
 	.AddQuartz(q =>

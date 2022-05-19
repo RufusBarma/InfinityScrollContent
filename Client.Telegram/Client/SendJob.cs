@@ -11,13 +11,15 @@ public class SendJob: IJob
 {
 	private readonly ISender _sender;
 	private readonly ILogger<SendJob> _logger;
+	private readonly SenderSettings.SenderSettings _settings;
 	private readonly IMongoCollection<Link> _linkCollection;
 	private readonly IMongoCollection<PostedLink> _postedCollection;
 
-	public SendJob(ISender sender, IMongoDatabase dbClient, ILogger<SendJob> logger)
+	public SendJob(ISender sender, IMongoDatabase dbClient, ILogger<SendJob> logger, SenderSettings.SenderSettings settings)
 	{
 		_sender = sender;
 		_logger = logger;
+		_settings = settings;
 		_linkCollection = dbClient.GetCollection<Link>("Links");
 		_postedCollection = dbClient.GetCollection<PostedLink>("PostedLinks");
 	}
@@ -25,12 +27,12 @@ public class SendJob: IJob
 	public async Task Execute(IJobExecutionContext context)
 	{
 		//TODO get id and username from db
-		var channelId = 000000000;
-		var channelUserName = "";
+		var channelId = _settings.ChannelId;
+		var channelUserName = _settings.ChannelUsername;
 
 		var limit = 1;
-		var categories = new[] {"General Categories"};
-		var exceptCategories = new[] {""};
+		var categories = _settings.Categories;
+		var exceptCategories = _settings.ExceptCategories;
 		var documents = await (await GetLinks(categories, exceptCategories)).Where(link => link.Urls.Length <= 10).Take(limit).ToListAsync();
 		await foreach (var link in _sender.Send(documents, channelId, channelUserName, context.CancellationToken))
 		{
