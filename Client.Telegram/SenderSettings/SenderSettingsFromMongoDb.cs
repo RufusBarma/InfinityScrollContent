@@ -38,5 +38,5 @@ public class SenderSettingsFromMongoDb: ISenderSettingsFetcher
 			yield return settings;
 	}
 
-	public event Func<bool>? OnUpdate;
+	public event Action OnUpdate;
 }

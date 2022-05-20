@@ -1,6 +1,10 @@
 ﻿using System.Runtime.InteropServices;
 using Client.Telegram.Client;
 using Client.Telegram.SenderSettings;
+using Client.Telegram.Startup;
+using Hangfire;
+using Hangfire.MemoryStorage;
+using Hangfire.Server;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -29,7 +33,7 @@ if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
 
 var serviceProvider = new ServiceCollection()
 	.AddTransient<IVideoTool, FfmpegVideoTool>()
-	.AddTransient(_ =>
+	.AddSingleton(_ =>
 		new WTelegram.Client(what =>
 		{
 			if (what != "verification_code") return configurationRoot.GetValue<string>(what);
@@ -49,46 +53,56 @@ var serviceProvider = new ServiceCollection()
 	.AddTransient<IMongoCollection<SavedState>>(provider => provider.GetService<IMongoDatabase>().GetCollection<SavedState>("AccessHash"))
 	.AddTransient<IMongoCollection<SenderSettings>>(provider => provider.GetService<IMongoDatabase>().GetCollection<SenderSettings>("SenderSettings"))
 	.AddTransient<ISenderSettingsFetcher, SenderSettingsFromMongoDb>()
-	.AddTransient<SenderSettings>(provider => provider.GetRequiredService<ISenderSettingsFetcher>().Fetch().ToEnumerable().First())
+	.AddTransient<SendJobFactory>()
+	// .AddTransient<SenderSettings>(provider => provider.GetRequiredService<ISenderSettingsFetcher>().Fetch().ToEnumerable().First())
 	.AddTransient<ISender, ClientSender>()
 	.AddSingleton<ClientSenderExtensions>()
-	.AddQuartz(q =>
-		{
-			// handy when part of cluster or you want to otherwise identify multiple schedulers
-			q.SchedulerId = "Scheduler-Core";
-			// we take this from appsettings.json, just show it's possible
-			q.SchedulerName = "Quartz ASP.NET Core Sample Scheduler";
-
-			q.UseMicrosoftDependencyInjectionJobFactory();
-
-			// these are the defaults
-			q.UseSimpleTypeLoader();
-			q.UseInMemoryStore();
-			q.UseDefaultThreadPool(tp => { tp.MaxConcurrency = 10; });
-
-			q.ScheduleJob<SendJob>(trigger => trigger
-				.WithIdentity("Combined Configuration Trigger")
-				.StartNow()
-				.WithCronSchedule("0 0 */2 * * ?")
-				.WithDescription("my awesome trigger configured for a job with single call")
-			);
-		})
-	.AddQuartzHostedService(q => q.WaitForJobsToComplete = true)
+	.AddTransient<IStartup, Startup>()
+	.AddHangfire(configuration => configuration
+		.SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
+		.UseSimpleAssemblyNameTypeSerializer()
+		.UseRecommendedSerializerSettings()
+		.UseMemoryStorage()
+	)
+	.AddSingleton<IBackgroundProcessingServer, BackgroundJobServer>()
+	.AddHangfireServer()
+	// .AddQuartz(q =>
+	// 	{
+	// 		// handy when part of cluster or you want to otherwise identify multiple schedulers
+	// 		q.SchedulerId = "Scheduler-Core";
+	// 		// we take this from appsettings.json, just show it's possible
+	// 		q.SchedulerName = "Quartz ASP.NET Core Sample Scheduler";
+	//
+	// 		q.UseMicrosoftDependencyInjectionJobFactory();
+	//
+	// 		// these are the defaults
+	// 		q.UseSimpleTypeLoader();
+	// 		q.UseInMemoryStore();
+	// 		q.UseDefaultThreadPool(tp => { tp.MaxConcurrency = 10; });
+	//
+	// 		q.ScheduleJob<SendJob>(trigger => trigger
+	// 			.WithIdentity("Combined Configuration Trigger")
+	// 			.StartNow()
+	// 			// .WithCronSchedule("0 0 */2 * * ?")
+	// 			.WithDescription("my awesome trigger configured for a job with single call")
+	// 		);
+	// 	})
+	// .AddQuartzHostedService(q => q.WaitForJobsToComplete = true)
 	.BuildServiceProvider();
 
 var telegramLogger = serviceProvider.GetRequiredService<ILogger<WTelegram.Client>>();
 WTelegram.Helpers.Log = (lvl, str) => telegramLogger.Log((LogLevel)lvl, str);
 
 var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
-var scheduler = await serviceProvider.GetRequiredService<ISchedulerFactory>().GetScheduler();
+var startup = serviceProvider.GetRequiredService<IStartup>();
 var cancellationTokenSource = new CancellationTokenSource();
-await scheduler.Start(cancellationTokenSource.Token);
+var startupTask = startup.Start(cancellationTokenSource.Token);
 
 AppDomain.CurrentDomain.ProcessExit += async (_, _) =>
 {
 	logger.LogInformation("Received SIGTERM");
 	cancellationTokenSource.Cancel();
-	await scheduler.Shutdown(true);
+	await startupTask;
 	logger.LogInformation("Safety shutdown");
 	await serviceProvider.DisposeAsync();
 };

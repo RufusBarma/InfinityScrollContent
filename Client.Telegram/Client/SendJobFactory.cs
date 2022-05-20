@@ -6,17 +6,14 @@ namespace Client.Telegram.Client;
 public class SendJobFactory
 {
 	private readonly IServiceProvider _serviceProvider;
-	private readonly ISenderSettingsFetcher _fetcher;
 
-	public SendJobFactory(IServiceProvider serviceProvider, ISenderSettingsFetcher fetcher)
+	public SendJobFactory(IServiceProvider serviceProvider)
 	{
 		_serviceProvider = serviceProvider;
-		_fetcher = fetcher;
 	}
 
-	public async IAsyncEnumerable<SendJob> GetJobs()
+	public SendJob GetJobs(SenderSettings.SenderSettings settings)
 	{
-		await foreach (var settings in _fetcher.Fetch())
-			yield return ActivatorUtilities.CreateInstance<SendJob>(_serviceProvider, settings);
+		return ActivatorUtilities.CreateInstance<SendJob>(_serviceProvider, settings);
 	}
 }

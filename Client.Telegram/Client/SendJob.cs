@@ -24,7 +24,7 @@ public class SendJob: IJob
 		_postedCollection = dbClient.GetCollection<PostedLink>("PostedLinks");
 	}
 
-	public async Task Execute(IJobExecutionContext context)
+	public async Task Execute(CancellationToken cancellationToken)
 	{
 		//TODO get id and username from db
 		var channelId = _settings.ChannelId;
@@ -34,7 +34,7 @@ public class SendJob: IJob
 		var categories = _settings.Categories;
 		var exceptCategories = _settings.ExceptCategories;
 		var documents = await (await GetLinks(categories, exceptCategories)).Where(link => link.Urls.Length <= 10).Take(limit).ToListAsync();
-		await foreach (var link in _sender.Send(documents, channelId, channelUserName, context.CancellationToken))
+		await foreach (var link in _sender.Send(documents, channelId, channelUserName, cancellationToken))
 		{
 			var postedLink = new PostedLink
 			{
@@ -45,6 +45,11 @@ public class SendJob: IJob
 			};
 			await _postedCollection.InsertOneAsync(postedLink);
 		}
+	}
+
+	public async Task Execute(IJobExecutionContext context)
+	{
+		await Execute(context.CancellationToken);
 	}
 
 	private IAsyncEnumerable<Link> GetLinks(string category, string[] exceptCategories)
