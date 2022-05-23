@@ -1,4 +1,5 @@
 using Client.Telegram.Models;
+using Hangfire;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using MoreLinq;
@@ -24,16 +25,22 @@ public class SendJob: IJob
 		_postedCollection = dbClient.GetCollection<PostedLink>("PostedLinks");
 	}
 
+	[DisableConcurrentExecution(60*30)] //30 minutes
 	public async Task Execute(CancellationToken cancellationToken)
 	{
-		//TODO get id and username from db
 		var channelId = _settings.ChannelId;
 		var channelUserName = _settings.ChannelUsername;
+		var onlyFromCategories = _settings.OnlyFromCategories;
 
 		var limit = 1;
 		var categories = _settings.Categories;
 		var exceptCategories = _settings.ExceptCategories;
-		var documents = await (await GetLinks(categories, exceptCategories)).Where(link => link.Urls.Length <= 10).Take(limit).ToListAsync();
+		_logger.LogInformation("Founding documents");
+		var documents = await (await GetLinks(categories, exceptCategories, onlyFromCategories))
+			.Where(link => link.Urls.Length <= 10)
+			.Take(limit)
+			.ToListAsync();
+		_logger.LogInformation("Documents founded");
 		await foreach (var link in _sender.Send(documents, channelId, channelUserName, cancellationToken))
 		{
 			var postedLink = new PostedLink
@@ -73,7 +80,7 @@ public class SendJob: IJob
 				targetType => targetType.SourceUrl, output => output.PostedLinks)
 			.Match(link => !link.PostedLinks.Any())
 			.Match(filter)
-			.SortByDescending(link => link.UpVotes)
+			// .SortByDescending(link => link.UpVotes) TODO research it
 			.ToEnumerable()
 			.Cast<Link>()
 			.ToAsyncEnumerable()
@@ -86,7 +93,7 @@ public class SendJob: IJob
 		return documents;
 	}
 
-	private async Task<IAsyncEnumerable<Link>> GetLinks(IEnumerable<string> categories, string[] exceptCategories)
+	private async Task<IAsyncEnumerable<Link>> GetLinks(IEnumerable<string> categories, string[] exceptCategories, bool onlyFromCategories = false)
 	{
 		foreach (var category in categories.Shuffle())
 		{
@@ -97,9 +104,9 @@ public class SendJob: IJob
 				return documents;
 		}
 
-		var documentsWithoutCategory = GetLinks(string.Empty, exceptCategories);
+		var documentsWithoutCategory = onlyFromCategories?  AsyncEnumerable.Empty<Link>(): GetLinks(string.Empty, exceptCategories);
 		if (!await documentsWithoutCategory.AnyAsync())
-			_logger.LogWarning("All categories is empty");
+			_logger.LogWarning("All categories is empty (OnlyFromCategories - {OnlyFromCategories})", onlyFromCategories);
 		return documentsWithoutCategory;
 	}
 

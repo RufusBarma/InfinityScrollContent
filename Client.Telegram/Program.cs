@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using Client.Telegram.Boilerplates;
 using Client.Telegram.Client;
 using Client.Telegram.SenderSettings;
 using Client.Telegram.Startup;
@@ -89,7 +90,7 @@ var serviceProvider = new ServiceCollection()
 	// 	})
 	// .AddQuartzHostedService(q => q.WaitForJobsToComplete = true)
 	.BuildServiceProvider();
-
+GlobalConfiguration.Configuration.UseActivator(new ContainerJobActivator(serviceProvider));
 var telegramLogger = serviceProvider.GetRequiredService<ILogger<WTelegram.Client>>();
 WTelegram.Helpers.Log = (lvl, str) => telegramLogger.Log((LogLevel)lvl, str);
 

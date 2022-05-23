@@ -38,11 +38,10 @@ public class Startup: IStartup
 	{
 		await foreach (var settings in _fetcher.Fetch().Skip(1))
 		{
-			RecurringJob.AddOrUpdate(settings.ChannelUsername,
-				() => _sendJobFactory.GetJobs(settings).Execute(CancellationToken.None), settings.Cron);
-
-			// BackgroundJob.Enqueue(() => _sendJobFactory.GetJobs(settings).Execute(CancellationToken.None));
-			break;
+			RecurringJob.AddOrUpdate(
+				settings.ChannelUsername,
+				() => _sendJobFactory.ExecuteJob(settings, CancellationToken.None),
+				settings.Cron);
 		}
 	}
 }

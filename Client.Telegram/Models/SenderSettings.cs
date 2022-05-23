@@ -10,4 +10,5 @@ public class SenderSettings
 	public string[] Categories { get; init; }
 	public string[] ExceptCategories { get; init; }
 	public string Cron { get; init; }
+	public bool OnlyFromCategories { get; init; }
 }

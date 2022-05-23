@@ -16,4 +16,9 @@ public class SendJobFactory
 	{
 		return ActivatorUtilities.CreateInstance<SendJob>(_serviceProvider, settings);
 	}
+
+	public async Task ExecuteJob(SenderSettings.SenderSettings settings, CancellationToken cancellationToken)
+	{
+		await GetJobs(settings).Execute(cancellationToken);
+	}
 }
