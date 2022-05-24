@@ -1,5 +1,4 @@
 using Client.Telegram.Models;
-using Hangfire;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using MoreLinq;
@@ -25,7 +24,6 @@ public class SendJob: IJob
 		_postedCollection = dbClient.GetCollection<PostedLink>("PostedLinks");
 	}
 
-	[DisableConcurrentExecution(60*30)] //30 minutes
 	public async Task Execute(CancellationToken cancellationToken)
 	{
 		var channelId = _settings.ChannelId;

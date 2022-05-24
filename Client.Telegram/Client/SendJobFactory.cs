@@ -1,4 +1,4 @@
-using Client.Telegram.SenderSettings;
+using Hangfire;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Client.Telegram.Client;
@@ -17,6 +17,7 @@ public class SendJobFactory
 		return ActivatorUtilities.CreateInstance<SendJob>(_serviceProvider, settings);
 	}
 
+	[DisableConcurrentExecution(60*30)] //30 minutes
 	public async Task ExecuteJob(SenderSettings.SenderSettings settings, CancellationToken cancellationToken)
 	{
 		await GetJobs(settings).Execute(cancellationToken);

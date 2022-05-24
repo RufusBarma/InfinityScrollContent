@@ -11,13 +11,15 @@ public class Startup: IStartup
 	private readonly ILogger<Startup> _logger;
 	private readonly IBackgroundProcessingServer _server;
 	private readonly SendJobFactory _sendJobFactory;
+	private readonly IRecurringJobManager _jobManager;
 	private readonly ISenderSettingsFetcher _fetcher;
 
-	public Startup(ILogger<Startup> logger, ISenderSettingsFetcher fetcher, IBackgroundProcessingServer server, SendJobFactory sendJobFactory)
+	public Startup(ILogger<Startup> logger, ISenderSettingsFetcher fetcher, IBackgroundProcessingServer server, SendJobFactory sendJobFactory, IRecurringJobManager jobManager)
 	{
 		_logger = logger;
 		_server = server;
 		_sendJobFactory = sendJobFactory;
+		_jobManager = jobManager;
 		_fetcher = fetcher;
 	}
 
@@ -36,9 +38,10 @@ public class Startup: IStartup
 
 	private async Task PlanSenders()
 	{
-		await foreach (var settings in _fetcher.Fetch().Skip(1))
+		_logger.LogInformation("Plan senders");
+		await foreach (var settings in _fetcher.Fetch())
 		{
-			RecurringJob.AddOrUpdate(
+			_jobManager.AddOrUpdate(
 				settings.ChannelUsername,
 				() => _sendJobFactory.ExecuteJob(settings, CancellationToken.None),
 				settings.Cron);
