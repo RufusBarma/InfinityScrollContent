@@ -66,7 +66,7 @@ public class ClientSender : ISender, IDisposable
 	{
 		if (disposing)
 		{
-			_client.Dispose();
+			// _client.Dispose(); //TODO throw exception in LoginIfNeeded (solve please)
 		}
 	}
 

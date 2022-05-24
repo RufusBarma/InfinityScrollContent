@@ -17,6 +17,7 @@ public class SendJobFactory
 		return ActivatorUtilities.CreateInstance<SendJob>(_serviceProvider, settings);
 	}
 
+	[AutomaticRetry(Attempts = 2)]
 	[DisableConcurrentExecution(60*30)] //30 minutes
 	public async Task ExecuteJob(SenderSettings.SenderSettings settings, CancellationToken cancellationToken)
 	{
