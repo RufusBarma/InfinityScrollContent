@@ -38,6 +38,8 @@ public class RedditGalleryResolver: IUrlResolver
 		var urls = new List<string>();
 		foreach (var media in mediaParent.Children<JProperty>())
 		{
+			if (media.Value["status"].Value<string>() == "failed")
+				continue;
 			var id = media.Value["id"].Value<string>();
 			var type = media.Value["m"].Value<string>().Split("/").Last();
 			urls.Add($"https://i.redd.it/{id}.{type}");
