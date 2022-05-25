@@ -68,7 +68,7 @@ public class MainResolver : IMainResolver
 			if (url.Contains("imgur"))
 				url = Path.ChangeExtension(url, null);
 			else
-				return new[] { url };
+				return "Skip";
 		return await Prelude.Optional(_urlResolvers.FirstOrDefault(resolver => resolver.CanResolve(url)))
 			.MatchAsync(
 				async resolver =>
