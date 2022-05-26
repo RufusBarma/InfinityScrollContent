@@ -2,6 +2,7 @@ using System.Net;
 using LanguageExt;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using MoreLinq.Extensions;
 using Newtonsoft.Json.Linq;
 using RestSharp;
@@ -12,11 +13,14 @@ namespace UrlResolverMicroservice.UrlResolvers;
 public class ImgurResolver: IUrlResolver
 {
 	private readonly IDistributedCache _distributedCache;
+	private readonly ILogger<ImgurResolver> _logger;
 	private bool _limitRich = false;
-	private (Func<string, string> getEndpoint, Func<JObject, string[]> getUrls) _endpoints(string key) => key switch
-	{
-		"" => (hash => $"https://api.imgur.com/3/image/{hash}", data => new []{data["data"].Value<string>("mp4") ?? data["data"].Value<string>("link")}),
-		"a" => (hash => $"https://api.imgur.com/3/album/{hash}/images", 
+
+	private static (Func<string, string> getEndpoint, Func<JObject, string[]> getUrls) ApiImage() => 
+		(hash => $"https://api.imgur.com/3/image/{hash}", data => new[] { data["data"].Value<string>("mp4") ?? data["data"].Value<string>("link") });
+
+	private static (Func<string, string> getEndpoint, Func<JObject, string[]> getUrls) ApiAlbum() => 
+		(hash => $"https://api.imgur.com/3/album/{hash}/images", 
 			baseData =>
 			{
 				var data = baseData["data"];
@@ -28,21 +32,30 @@ public class ImgurResolver: IUrlResolver
 					return data["images"].Children()
 						.Select(image => image.Value<string>("mp4") ?? image.Value<string>("link"))
 						.ToArray();
-			}),
-		"gallery" => (hash => $"https://api.imgur.com/3/gallery/album/{hash}", 
+			});
+
+	private static (Func<string, string> getEndpoint, Func<JObject, string[]> getUrls) ApiGallery() => 
+		(hash => $"https://api.imgur.com/3/gallery/album/{hash}", 
 			data => data["data"]["images"] != null
-				? _endpoints("a").getUrls(data)
+				? ApiAlbum().getUrls(data)
 				: data["data"]["link"]["images"]
 					.Select(image => image["link"].Value<string>())
-					.ToArray()),
-		"r" => _endpoints("")
+					.ToArray());
+
+	private Dictionary<string, (Func<string, string> getEndpoint, Func<JObject, string[]> getUrls)> _endpoints = new()
+	{
+		{"", ApiImage()},
+		{"a", ApiAlbum()},
+		{"gallery", ApiGallery()},
+		{"r", ApiImage()},
 	};
 
 	private readonly RestRequest _request;
 
-	public ImgurResolver(IConfiguration configuration, IDistributedCache distributedCache)
+	public ImgurResolver(IConfiguration configuration, IDistributedCache distributedCache, ILogger<ImgurResolver> logger)
 	{
 		_distributedCache = distributedCache;
+		_logger = logger;
 		//TODO implement api limits on application side
 		var clientId = configuration.GetSection("Imgur")["ClientId"];
 		_request = new RestRequest(Method.GET);
@@ -53,8 +66,14 @@ public class ImgurResolver: IUrlResolver
 	public async Task<Either<string, string[]>> ResolveAsync(string url)
 	{
 		var urlParts = url.Split('/', StringSplitOptions.RemoveEmptyEntries).SkipUntil(part => part.Contains("imgur.com")).ToList();
-		var endpointFuncs = urlParts.Count > 1 ? _endpoints(urlParts[0]) : _endpoints("");
-		var client = new RestClient(endpointFuncs.getEndpoint(Path.GetFileNameWithoutExtension(urlParts.Last())))
+		var apiKey = urlParts.Count > 1 ? urlParts[0] : "";
+		if (!_endpoints.ContainsKey(apiKey))
+		{
+			_logger.LogError("Exception on get endpoint {url}", url);
+			return "Skip";
+		}
+		var endpointFunc = _endpoints[apiKey];
+		var client = new RestClient(endpointFunc.getEndpoint(Path.GetFileNameWithoutExtension(urlParts.Last())))
 		{
 			Timeout = -1
 		};
@@ -73,7 +92,7 @@ public class ImgurResolver: IUrlResolver
 			else 
 				return response.StatusDescription;
 		var data = JObject.Parse(response.Content);
-		var urls = endpointFuncs.getUrls(data);
+		var urls = endpointFunc.getUrls(data);
 		return urls.Any() ? urls : "Empty collection";
 	}
 
