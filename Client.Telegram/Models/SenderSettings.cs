@@ -6,7 +6,8 @@ namespace Client.Telegram.SenderSettings;
 [BsonIgnoreExtraElements]
 public class SenderSettings
 {
-	public ObjectId _id { get; init; }
+	[BsonRepresentation(BsonType.ObjectId)]
+	public string _id { get; init; }
 	public long ChannelId { get; init; }
 	public string ChannelUsername { get; init; } = "";
 	public string[] Categories { get; init; }

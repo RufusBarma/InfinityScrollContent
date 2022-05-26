@@ -48,7 +48,7 @@ public class Startup: IStartup
 		await foreach (var settings in _fetcher.Fetch())
 		{
 			_jobManager.AddOrUpdate(
-				settings._id.ToString(),
+				settings._id,
 				() => _sendJobFactory.ExecuteJob(settings, CancellationToken.None),
 				settings.Cron);
 		}
