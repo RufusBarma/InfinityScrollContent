@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
+using MoreLinq.Extensions;
 
 namespace Client.Telegram.SenderSettings;
 
@@ -13,23 +14,28 @@ public class SenderSettingsFromMongoDb: ISenderSettingsFetcher
 	{
 		_logger = logger;
 		_senderCollection = senderCollection;
-		// _checkUpdates = new Task(() =>
-		// {
-		// 	var options = new ChangeStreamOptions {FullDocument = ChangeStreamFullDocumentOption.UpdateLookup};
-		// 	var pipeline =
-		// 		new EmptyPipelineDefinition<ChangeStreamDocument<SenderSettings>>().Match(
-		// 			"{ operationType: { $in: [ 'insert', 'delete' ] } }");
-		//
-		// 	var cursor = _senderCollection.Watch(pipeline, options);
-		//
-		// 	var enumerator = cursor.ToEnumerable().GetEnumerator();
-		// 	while (enumerator.MoveNext())
-		// 	{
-		// 		ChangeStreamDocument<SenderSettings> doc = enumerator.Current;
-		// 		// Do something here with your document
-		// 		Console.WriteLine(doc.DocumentKey);
-		// 	}
-		// });
+		Task.Run(CheckUpdates);
+	}
+
+	private async Task CheckUpdates()
+	{
+		var options = new ChangeStreamOptions {FullDocument = ChangeStreamFullDocumentOption.UpdateLookup};
+		var pipeline =
+			new EmptyPipelineDefinition<ChangeStreamDocument<SenderSettings>>().Match(
+				"{ operationType: { $in: [ 'insert', 'delete', 'update' ] } }");
+
+		var cursor = _senderCollection.Watch(pipeline, options);
+
+		cursor
+			.ToEnumerable()
+			.ForEach(doc =>
+			{
+				_logger.LogInformation("SenderSettings have been changed");
+				if (doc.OperationType == ChangeStreamOperationType.Delete)
+					OnDelete?.Invoke(doc.DocumentKey["_id"].ToString());
+				else
+					OnUpdate?.Invoke();
+			});
 	}
 
 	public async IAsyncEnumerable<SenderSettings> Fetch()
@@ -39,4 +45,5 @@ public class SenderSettingsFromMongoDb: ISenderSettingsFetcher
 	}
 
 	public event Action OnUpdate;
+	public event Action<string> OnDelete;
 }

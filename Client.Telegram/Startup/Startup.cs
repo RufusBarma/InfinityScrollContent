@@ -31,9 +31,15 @@ public class Startup: IStartup
 			if (!cancellationToken.IsCancellationRequested)
 				await PlanSenders();
 		};
+		_fetcher.OnDelete += async id => await DeleteSender(id);
 		await Task.FromCanceled(cancellationToken);
 		_server.SendStop();
 		await _server.WaitForShutdownAsync(CancellationToken.None);
+	}
+	private async Task DeleteSender(string id)
+	{
+		_logger.LogInformation("Delete sender - {id}", id);
+		_jobManager.RemoveIfExists(id);
 	}
 
 	private async Task PlanSenders()
@@ -42,7 +48,7 @@ public class Startup: IStartup
 		await foreach (var settings in _fetcher.Fetch())
 		{
 			_jobManager.AddOrUpdate(
-				settings.ChannelUsername,
+				settings._id.ToString(),
 				() => _sendJobFactory.ExecuteJob(settings, CancellationToken.None),
 				settings.Cron);
 		}

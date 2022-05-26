@@ -1,3 +1,4 @@
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace Client.Telegram.SenderSettings;
@@ -5,6 +6,7 @@ namespace Client.Telegram.SenderSettings;
 [BsonIgnoreExtraElements]
 public class SenderSettings
 {
+	public ObjectId _id { get; init; }
 	public long ChannelId { get; init; }
 	public string ChannelUsername { get; init; } = "";
 	public string[] Categories { get; init; }
