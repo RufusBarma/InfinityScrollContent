@@ -5,6 +5,7 @@ using LanguageExt.UnsafeValueAccess;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
+using MoreLinq.Extensions;
 using Reddit;
 using Reddit.Controllers;
 
@@ -40,12 +41,7 @@ public class RedditAggregator: IAggregator
 
 	private async Task RunAggregator(List<CategoryItem> categories, CancellationToken cancellationToken)
 	{
-		var inCategory = new[] {"Ass", "Redhead", "Freckles", "Light Skin", "Cum Play", "General Categories", "Sex", "Specific Actor/Actress"};
-		var notCategory = new[] {"Humorous", "LGBT", "Non-Porn NSFW", "Desktop Wallpaper"};
-		var categoryItems = categories
-			.Where(category => 
-				category.Group.Any(group => inCategory.Contains(group) && 
-				category.Group.All(group => !notCategory.Contains(group))));//.Shuffle().Take(5);
+		var categoryItems = categories.Shuffle();
 		foreach (var linksTask in categoryItems
 			         .Select(category => (category, Subreddit: _reddit.GetSubreddit(category.Title, _logger)))
 			         .Where(tuple => tuple.Subreddit.IsSome)
