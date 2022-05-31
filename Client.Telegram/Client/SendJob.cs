@@ -95,6 +95,7 @@ public class SendJob: IJob
 	{
 		foreach (var category in categories.Shuffle())
 		{
+			_logger.LogInformation("Founding category - {Category}", category);
 			var documents = GetLinks(category, exceptCategories);
 			if (!await documents.AnyAsync())
 				_logger.LogWarning($"Documents count is 0 for {category}");
