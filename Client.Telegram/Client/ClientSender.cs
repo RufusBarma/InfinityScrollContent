@@ -47,6 +47,7 @@ public class ClientSender : ISender, IDisposable
 				var sourceLink = string.IsNullOrEmpty(link.PermaLink)? "": $"[Source]({link.PermaLink})";
 				var tags = string.Join(' ', link.Category.Select(category => '#' + 
 				                                                             category
+					                                                             .Replace(" &amp; ", "_")
 					                                                             .Replace(' ', '_').Replace('-', '_')
 					                                                             .Replace('/', '_').Replace('\\', '_')));
 				var caption = (description + "*Categories:* " + Markdown.Escape(tags) + "\n\n" + "*" + sourceLink + "*").Trim();
