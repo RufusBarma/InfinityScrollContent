@@ -12,7 +12,6 @@ using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using Mono.Unix.Native;
 using MoreLinq;
-using Quartz;
 using Xabe.FFmpeg;
 using Xabe.FFmpeg.Downloader;
 
@@ -49,13 +48,12 @@ var serviceProvider = new ServiceCollection()
 	.AddSingleton<IMongoDatabase>(_ =>
 	{
 		var mongoUrl = new MongoUrl(configurationRoot.GetConnectionString("DefaultConnection"));
-		return new MongoClient(mongoUrl).GetDatabase(mongoUrl.DatabaseName);
+		return new MongoClient(mongoUrl.Url.Replace(mongoUrl.DatabaseName, "")).GetDatabase(mongoUrl.DatabaseName);
 	})
 	.AddTransient<IMongoCollection<SavedState>>(provider => provider.GetService<IMongoDatabase>().GetCollection<SavedState>("AccessHash"))
 	.AddTransient<IMongoCollection<SenderSettings>>(provider => provider.GetService<IMongoDatabase>().GetCollection<SenderSettings>("SenderSettings"))
 	.AddTransient<ISenderSettingsFetcher, SenderSettingsFromMongoDb>()
 	.AddTransient<SendJobFactory>()
-	// .AddTransient<SenderSettings>(provider => provider.GetRequiredService<ISenderSettingsFetcher>().Fetch().ToEnumerable().First())
 	.AddTransient<ISender, ClientSender>()
 	.AddSingleton<ClientSenderExtensions>()
 	.AddTransient<IStartup, Startup>()
@@ -67,28 +65,6 @@ var serviceProvider = new ServiceCollection()
 	)
 	.AddSingleton<IBackgroundProcessingServer, BackgroundJobServer>()
 	.AddHangfireServer()
-	// .AddQuartz(q =>
-	// 	{
-	// 		// handy when part of cluster or you want to otherwise identify multiple schedulers
-	// 		q.SchedulerId = "Scheduler-Core";
-	// 		// we take this from appsettings.json, just show it's possible
-	// 		q.SchedulerName = "Quartz ASP.NET Core Sample Scheduler";
-	//
-	// 		q.UseMicrosoftDependencyInjectionJobFactory();
-	//
-	// 		// these are the defaults
-	// 		q.UseSimpleTypeLoader();
-	// 		q.UseInMemoryStore();
-	// 		q.UseDefaultThreadPool(tp => { tp.MaxConcurrency = 10; });
-	//
-	// 		q.ScheduleJob<SendJob>(trigger => trigger
-	// 			.WithIdentity("Combined Configuration Trigger")
-	// 			.StartNow()
-	// 			// .WithCronSchedule("0 0 */2 * * ?")
-	// 			.WithDescription("my awesome trigger configured for a job with single call")
-	// 		);
-	// 	})
-	// .AddQuartzHostedService(q => q.WaitForJobsToComplete = true)
 	.BuildServiceProvider();
 GlobalConfiguration.Configuration.UseActivator(new ContainerJobActivator(serviceProvider));
 var telegramLogger = serviceProvider.GetRequiredService<ILogger<WTelegram.Client>>();
