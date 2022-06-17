@@ -33,12 +33,14 @@ if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
 
 var serviceProvider = new ServiceCollection()
 	.AddTransient<IVideoTool, FfmpegVideoTool>()
-	.AddSingleton(_ =>
+	.AddTransient<CodeGetterBot>()
+	.AddSingleton(provider =>
 		new WTelegram.Client(what =>
 		{
 			if (what != "verification_code") return configurationRoot.GetValue<string>(what);
-			Console.Write("Code: ");
-			return Console.ReadLine();
+			var codeGetterBot = provider.GetService<CodeGetterBot>();
+			Console.Write("Await auth code");
+			return codeGetterBot.GetCode();
 		})
 			{CollectAccessHash = true}
 	)
