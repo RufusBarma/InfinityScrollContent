@@ -20,12 +20,12 @@ services:
     links:
       - mongodb
   clientTelegram:
-    image: client-telegram:latest
+    image: registry.gitlab.com/rufusbarma/infinityscrollcontent/client_telegram:latest
     build:
       context: .
       dockerfile: Client.Telegram/Dockerfile
     links:
-      - mongodb    
+      - mongodb
     deploy:
       restart_policy:
         condition: on-failure

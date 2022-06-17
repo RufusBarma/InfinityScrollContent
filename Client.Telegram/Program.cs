@@ -16,8 +16,8 @@ using Xabe.FFmpeg;
 using Xabe.FFmpeg.Downloader;
 
 var configurationRoot = new ConfigurationBuilder()
-	.AddEnvironmentVariables()
 	.AddJsonFile("appsettings.json")
+	.AddEnvironmentVariables()
 	.Build();
 
 var ffmpegPath = "./FFmpeg";
@@ -47,7 +47,7 @@ var serviceProvider = new ServiceCollection()
 	.AddTransient<SendJob>()
 	.AddSingleton<IMongoDatabase>(_ =>
 	{
-		var mongoUrl = new MongoUrl(configurationRoot.GetConnectionString("DefaultConnection"));
+		var mongoUrl = new MongoUrl(configurationRoot.GetConnectionString("MongoConnection") ?? configurationRoot.GetConnectionString("DefaultConnection"));
 		return new MongoClient(mongoUrl.Url.Replace(mongoUrl.DatabaseName, "")).GetDatabase(mongoUrl.DatabaseName);
 	})
 	.AddTransient<IMongoCollection<SavedState>>(provider => provider.GetService<IMongoDatabase>().GetCollection<SavedState>("AccessHash"))
