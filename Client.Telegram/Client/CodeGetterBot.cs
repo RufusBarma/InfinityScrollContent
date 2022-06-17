@@ -22,6 +22,7 @@ public class CodeGetterBot
 		var token = config["telegram.bot.token"];
 		_chatId = config["admin.chat.id"];
 		_botClient = new TelegramBotClient(token);
+		// TODO cancel receiving after gotten
 		_botClient.StartReceiving(
 			HandleUpdateAsync,
 			HandleErrorAsync,
@@ -31,6 +32,7 @@ public class CodeGetterBot
 
 	public string GetCode()
 	{
+		_logger.LogInformation("Await auth code");
 		return GetCodeAsync().Result;
 	}
 
@@ -39,6 +41,8 @@ public class CodeGetterBot
 		await _botClient.SendTextMessageAsync(_chatId, "Please, write auth code:");
 		while (string.IsNullOrEmpty(lastMessage))
 			await Task.Delay(TimeSpan.FromSeconds(10));
+		_logger.LogInformation("Auth code gotten");
+		_cancellationTokenSource.Cancel();
 		return lastMessage;
 	}
 
@@ -55,7 +59,7 @@ public class CodeGetterBot
 		var chatId = update.Message.Chat.Id;
 		var messageText = update.Message.Text;
 		_logger.LogDebug("Received a '{messageText}' message in chat {chatId}.", messageText, chatId);
-		if (int.TryParse(messageText, out var number))
+		if (chatId.ToString() == _chatId && int.TryParse(messageText, out _))
 			lastMessage = messageText;
 	}
 

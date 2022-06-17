@@ -39,7 +39,6 @@ var serviceProvider = new ServiceCollection()
 		{
 			if (what != "verification_code") return configurationRoot.GetValue<string>(what);
 			var codeGetterBot = provider.GetService<CodeGetterBot>();
-			Console.Write("Await auth code");
 			return codeGetterBot.GetCode();
 		})
 			{CollectAccessHash = true}
