@@ -16,7 +16,7 @@ var serviceProvider = new ServiceCollection()
 	.AddSingleton<IMongoDatabase>(_ =>
 	{
 		var mongoUrl = new MongoUrl(configurationRoot.GetConnectionString("DefaultConnection"));
-		return new MongoClient(mongoUrl).GetDatabase(mongoUrl.DatabaseName);
+		return new MongoClient(mongoUrl.Url.Replace(mongoUrl.DatabaseName, "")).GetDatabase(mongoUrl.DatabaseName);
 	})
 	.AddTransient<IAggregator, RedditAggregator>()
 	.AddSingleton<AggregatorComposer>()
