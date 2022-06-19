@@ -40,10 +40,11 @@ public class ClientSender : ISender, IDisposable
 						? new InputMediaPhotoExternal {url = url}
 						: new InputMediaDocumentExternal {url = url}))
 				.GroupBy(media => media.GetType());
-			foreach (var mediaGroup in mediaGroups)
-			foreach (var urlChunk in mediaGroup.Chunk(10))
+			var chunks = mediaGroups.SelectMany(mediaGroup => mediaGroup.Chunk(8)).ToList();
+			var currentPart = 1;
+			foreach (var urlChunk in chunks)
 			{
-				var description = string.IsNullOrEmpty(link.Description)? "": Markdown.Escape(link.Description) + "\n\n";
+				var description = (chunks.Count > 1? $"Part {currentPart++}. ": "") + (string.IsNullOrEmpty(link.Description)? "": Markdown.Escape(link.Description) + "\n\n");
 				var sourceLink = string.IsNullOrEmpty(link.PermaLink)? "": $"[Source]({link.PermaLink})";
 				var tags = string.Join(' ', link.Category.Select(category => '#' + 
 				                                                             category
@@ -53,11 +54,13 @@ public class ClientSender : ISender, IDisposable
 				var caption = (description + "*Categories:* " + Markdown.Escape(tags) + "\n\n" + "*" + sourceLink + "*").Trim();
 				var entities = _client.MarkdownToEntities(ref caption);
 				await _extensions.SafeSendAlbumAsync(_client, channel, urlChunk, caption, entities: entities);
-				await Task.Delay(urlChunk.Length * 2500); // 24 urls per minute 2500 * 30 = 60000 ms 
+				await Task.Delay((urlChunk.Length + 1) * 2500); // 24 urls per minute 2500 * 30 = 60000 ms 
 				//TODO realize messages counting
-				_logger.LogInformation("Successful sent link with source: {Source}", link.SourceUrl);
+				if (chunks.Count > 1)
+					_logger.LogInformation("Successful sent chunk {CurrentPart} with source: {Source}", currentPart - 1, link.SourceUrl);
 				yield return link;
 			}
+			_logger.LogInformation("Successful sent link with source: {Source}", link.SourceUrl);
 		}
 
 		await _client.SaveAccessHash(me, _accessHashCollection);

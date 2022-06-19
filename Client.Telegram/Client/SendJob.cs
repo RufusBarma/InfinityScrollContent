@@ -35,7 +35,6 @@ public class SendJob: IJob
 		var exceptCategories = _settings.ExceptCategories;
 		_logger.LogInformation("Founding documents");
 		var documents = await (await GetLinks(categories, exceptCategories, onlyFromCategories))
-			.Where(link => link.Urls.Length <= 10)
 			.Take(limit)
 			.ToListAsync();
 		_logger.LogInformation("Documents founded");
@@ -87,7 +86,8 @@ public class SendJob: IJob
 				var parallelFound = link.Urls.Select(url => IsFound(url)).ToList();
 				await Task.WhenAll(parallelFound);
 				return parallelFound.All(url => url.Result);
-			});
+			})
+			.Take(5); //TODO solve performance problem
 		return documents;
 	}
 
