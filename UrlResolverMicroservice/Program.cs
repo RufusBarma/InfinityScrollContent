@@ -24,7 +24,7 @@ var serviceProvider = new ServiceCollection()
 	.AddSingleton<IConfiguration>(configurationRoot)
 	.AddSingleton<IMongoDatabase>(_ =>
 	{
-		var mongoUrl = new MongoUrl(configurationRoot.GetConnectionString("DefaultConnection"));
+		var mongoUrl = new MongoUrl(configurationRoot.GetConnectionString("MongoConnection") ?? configurationRoot.GetConnectionString("DefaultConnection"));
 		return new MongoClient(mongoUrl.Url.Replace(mongoUrl.DatabaseName, "")).GetDatabase(mongoUrl.DatabaseName);
 	})
 	.AddLogging(configure => configure.AddConsole())

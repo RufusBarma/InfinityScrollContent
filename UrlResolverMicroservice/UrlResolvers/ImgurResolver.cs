@@ -72,6 +72,12 @@ public class ImgurResolver: IUrlResolver
 			_logger.LogError("Exception on get endpoint {url}", url);
 			return "Skip";
 		}
+
+		if (urlParts.Count == 0)
+		{
+			_logger.LogWarning("Url parts empty for {Url}", url);
+			return "Skip";
+		}
 		var endpointFunc = _endpoints[apiKey];
 		var client = new RestClient(endpointFunc.getEndpoint(Path.GetFileNameWithoutExtension(urlParts.Last())))
 		{
